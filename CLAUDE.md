@@ -15,6 +15,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 같은 세션 내에서는 재로드하지 않음. 세션 중 문서 내용 참조 시 이미 읽은 내용 사용 (부분 재로드 없음).
 재로드는 사용자가 명시적으로 요청하거나, 문서 변경 후 최신 반영을 요청한 경우에만.
 
+.env 파일은 접근 및 조회하지 않는다. (.env.example은 가)
+
 ## 작업 워크플로우
 
 - **1차 (설계)**: 요구사항 파악 → 해결 방향 탐색 → 구현 방식 설계 → 사용자 승인
