@@ -37,8 +37,19 @@ class Settings(BaseSettings):
     NAVER_CLIENT_SECRET: str = ""
     OAUTH_REDIRECT_BASE_URL: str = ""
 
+    # CORS
+    CORS_ORIGINS: str = "http://localhost:3000"
+
+    # Auth TTL
+    OTP_EXPIRE_MINUTES: int = 5
+    OAUTH_STATE_EXPIRE_MINUTES: int = 10
+
     # Cloudflare
     CLOUDFLARE_TUNNEL_TOKEN: str = ""
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        return [o.strip() for o in self.CORS_ORIGINS.split(",")]
 
 
 settings = Settings()
