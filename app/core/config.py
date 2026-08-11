@@ -42,7 +42,6 @@ class Settings(BaseSettings):
 
     # Auth TTL
     OTP_EXPIRE_MINUTES: int = 5
-    OAUTH_STATE_EXPIRE_MINUTES: int = 10
 
     # Cloudflare
     CLOUDFLARE_TUNNEL_TOKEN: str = ""

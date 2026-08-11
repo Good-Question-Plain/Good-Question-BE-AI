@@ -1,14 +1,16 @@
 from typing import Literal
 
 from fastapi import APIRouter, Depends
-from fastapi.responses import RedirectResponse
 
 from app.core.dependencies import CurrentUser, DBSession, RedisDep
 from app.domain.auth.schema import (
+    ForgotPasswordRequest,
     LoginRequest,
     MessageResponse,
     RefreshRequest,
     RegisterRequest,
+    ResetPasswordRequest,
+    SocialCallbackRequest,
     TokenResponse,
     VerifyEmailRequest,
 )
@@ -64,20 +66,37 @@ async def logout(
     return MessageResponse(message="로그아웃 되었습니다.")
 
 
-@router.get("/{provider}/login", response_class=RedirectResponse)
-async def social_login(
-    provider: Literal["google", "kakao", "naver"],
+@router.post("/forgot-password", response_model=MessageResponse)
+async def forgot_password(
+    body: ForgotPasswordRequest,
     service: AuthService = Depends(_get_service),
 ):
-    url = await service.get_social_login_url(provider)
-    return RedirectResponse(url=url)
+    await service.forgot_password(body.email)
+    return MessageResponse(message="비밀번호 재설정 메일이 발송되었습니다.")
 
 
-@router.get("/{provider}/callback", response_model=TokenResponse)
+@router.post("/reset-password", response_model=MessageResponse)
+async def reset_password(
+    body: ResetPasswordRequest,
+    service: AuthService = Depends(_get_service),
+):
+    await service.reset_password(body.email, body.otp, body.new_password)
+    return MessageResponse(message="비밀번호가 변경되었습니다.")
+
+
+@router.delete("/me", response_model=MessageResponse)
+async def delete_account(
+    user: CurrentUser,
+    service: AuthService = Depends(_get_service),
+):
+    await service.delete_account(str(user.id))
+    return MessageResponse(message="회원탈퇴가 완료되었습니다.")
+
+
+@router.post("/{provider}/callback", response_model=TokenResponse)
 async def social_callback(
     provider: Literal["google", "kakao", "naver"],
-    code: str,
-    state: str,
+    body: SocialCallbackRequest,
     service: AuthService = Depends(_get_service),
 ):
-    return await service.social_callback(provider, code, state)
+    return await service.social_callback(provider, body.code, body.redirect_uri)

@@ -52,3 +52,11 @@ class CaregiverRepository:
     async def set_verified(self, caregiver: Caregiver) -> None:
         caregiver.is_verified = True
         await self.db.commit()
+
+    async def update_password(self, caregiver: Caregiver, hashed_password: str) -> None:
+        caregiver.hashed_password = hashed_password
+        await self.db.commit()
+
+    async def delete(self, caregiver: Caregiver) -> None:
+        await self.db.delete(caregiver)
+        await self.db.commit()

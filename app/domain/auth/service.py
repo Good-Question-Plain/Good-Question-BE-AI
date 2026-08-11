@@ -1,7 +1,5 @@
 import random
-import secrets
 import string
-import urllib.parse
 
 import httpx
 from jose import JWTError
@@ -17,7 +15,7 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
-from app.core.smtp import send_otp_email
+from app.core.smtp import send_otp_email, send_reset_password_email
 from app.domain.auth.repository import CaregiverRepository
 from app.domain.auth.schema import TokenResponse
 from app.models.caregiver import SocialProvider
@@ -117,30 +115,37 @@ class AuthService:
     async def logout(self, user_id: str) -> None:
         await self.redis.delete(f"refresh:{user_id}")
 
-    async def get_social_login_url(self, provider: str) -> str:
-        cfg = self._get_provider_config(provider)
-        state = secrets.token_hex(32)
-        await self.redis.set(
-            f"oauth_state:{state}", "1", ex=settings.OAUTH_STATE_EXPIRE_MINUTES * 60
-        )
-        redirect_uri = f"{settings.OAUTH_REDIRECT_BASE_URL}/auth/{provider}/callback"
-        params = {
-            "client_id": getattr(settings, _CLIENT_ID[provider]),
-            "redirect_uri": redirect_uri,
-            "response_type": "code",
-            "scope": cfg["scope"],
-            "state": state,
-        }
-        return f"{cfg['auth_url']}?{urllib.parse.urlencode(params)}"
+    async def forgot_password(self, email: str) -> None:
+        caregiver = await self.repo.get_by_email(email)
+        if not caregiver or caregiver.hashed_password is None:
+            return  # 이메일 존재 여부 노출 금지
 
-    async def social_callback(self, provider: str, code: str, state: str) -> TokenResponse:
-        stored = await self.redis.get(f"oauth_state:{state}")
-        if not stored:
-            raise BadRequestError("유효하지 않은 state 값입니다.")
-        await self.redis.delete(f"oauth_state:{state}")
+        otp = "".join(random.choices(string.digits, k=6))
+        await self.redis.set(f"reset:{email}", otp, ex=settings.OTP_EXPIRE_MINUTES * 60)
+        await send_reset_password_email(email, otp)
 
+    async def reset_password(self, email: str, otp: str, new_password: str) -> None:
+        caregiver = await self.repo.get_by_email(email)
+        if not caregiver or caregiver.hashed_password is None:
+            raise BadRequestError("비밀번호 재설정이 불가능한 계정입니다.")
+
+        stored = await self.redis.get(f"reset:{email}")
+        if not stored or stored != otp:
+            raise BadRequestError("유효하지 않거나 만료된 인증 코드입니다.")
+
+        await self.repo.update_password(caregiver, hash_password(new_password))
+        await self.redis.delete(f"reset:{email}")
+
+    async def delete_account(self, user_id: str) -> None:
+        caregiver = await self.repo.get_by_id(user_id)
+        if not caregiver:
+            raise BadRequestError("존재하지 않는 계정입니다.")
+
+        await self.redis.delete(f"refresh:{user_id}")
+        await self.repo.delete(caregiver)
+
+    async def social_callback(self, provider: str, code: str, redirect_uri: str) -> TokenResponse:
         cfg = self._get_provider_config(provider)
-        redirect_uri = f"{settings.OAUTH_REDIRECT_BASE_URL}/auth/{provider}/callback"
 
         async with httpx.AsyncClient() as client:
             token_resp = await client.post(

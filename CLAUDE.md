@@ -9,8 +9,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 1. `docs/PRD.md` — 없으면 건너뜀
 2. `docs/TRD.md` — 없으면 건너뜀
 3. `docs/WORKFLOW.md` — 없으면 반드시 사용자에게 알림
+4. `docs/IMPLEMENTATION_ORDER.md` — 없으면 건너뜀 (구현 순서 및 진행 상황)
 
-로드 완료 후 한 줄 출력: **"PRD / TRD / WORKFLOW 로드 완료, 작업 준비됐습니다."**
+로드 완료 후 한 줄 출력: **"PRD / TRD / WORKFLOW / IMPLEMENTATION_ORDER 로드 완료, 작업 준비됐습니다."**
 
 같은 세션 내에서는 재로드하지 않음. 세션 중 문서 내용 참조 시 이미 읽은 내용 사용 (부분 재로드 없음).
 재로드는 사용자가 명시적으로 요청하거나, 문서 변경 후 최신 반영을 요청한 경우에만.
@@ -29,6 +30,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - [`docs/PRD.md`](docs/PRD.md) — 서비스 개요, 기능 요구사항, AI/백엔드 연동 포인트
 - [`docs/TRD.md`](docs/TRD.md) — 기술 스택, 아키텍처, DB 스키마, 인증, 캐싱, 인프라
+- [`docs/IMPLEMENTATION_ORDER.md`](docs/IMPLEMENTATION_ORDER.md) — Phase별 구현 순서 및 진행 상황 (작업 완료 시 상태 갱신)
 
 ## Commands
 
