@@ -15,6 +15,7 @@ class Child(Base):
         ForeignKey("parents.id", ondelete="CASCADE"), nullable=False
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
+    profile_image_url: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -24,6 +25,9 @@ class Child(Base):
         back_populates="child", cascade="all, delete-orphan"
     )
     story_sessions: Mapped[list["StorySession"]] = relationship(back_populates="child")
+    saved_vocabularies: Mapped[list["ChildVocabulary"]] = relationship(
+        back_populates="child", cascade="all, delete-orphan"
+    )
 
 
 class ChildConsent(Base):
