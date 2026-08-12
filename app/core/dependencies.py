@@ -53,8 +53,28 @@ async def get_current_user(
     return parent
 
 
+async def get_current_user_with_email(
+    credentials: HTTPAuthorizationCredentials = Depends(_http_bearer),
+    db: AsyncSession = Depends(get_db),
+) -> tuple[Parent, str]:
+    try:
+        payload = verify_supabase_token(credentials.credentials)
+    except JWTError:
+        raise UnauthorizedError("유효하지 않은 토큰입니다.")
+    user_id: str | None = payload.get("sub")
+    email: str | None = payload.get("email")
+    if not user_id or not email:
+        raise UnauthorizedError("유효하지 않은 토큰입니다.")
+    result = await db.execute(select(Parent).where(Parent.id == uuid.UUID(user_id)))
+    parent = result.scalar_one_or_none()
+    if not parent:
+        raise UnauthorizedError("프로필이 등록되지 않은 사용자입니다.")
+    return parent, email
+
+
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 DBSession = Annotated[AsyncSession, Depends(get_db)]
 RedisDep = Annotated[Redis, Depends(get_redis)]
 CurrentUser = Annotated[Parent, Depends(get_current_user)]
 SupabaseUserID = Annotated[str, Depends(get_supabase_user_id)]
+CurrentUserWithEmail = Annotated[tuple[Parent, str], Depends(get_current_user_with_email)]
