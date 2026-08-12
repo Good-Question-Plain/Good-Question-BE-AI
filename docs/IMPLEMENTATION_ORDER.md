@@ -51,11 +51,11 @@
 
 | 작업 | 상태 |
 |------|------|
-| `GET /users/me` — 학부모 계정 정보 조회 | ⬜ |
-| `GET /users/me/children` — 자녀 프로필 목록 | ⬜ |
-| `POST /users/me/children` — 자녀 프로필 추가 | ⬜ |
-| `PATCH /users/me/children/{child_id}` — 자녀 프로필 수정 | ⬜ |
-| `DELETE /users/me/children/{child_id}` — 자녀 프로필 삭제 | ⬜ |
+| `GET /users/me` — 학부모 계정 정보 조회 | ✅ |
+| `GET /users/me/children` — 자녀 프로필 목록 | ✅ |
+| `POST /users/me/children` — 자녀 프로필 추가 | ✅ |
+| `PATCH /users/me/children/{child_id}` — 자녀 프로필 수정 | ✅ |
+| `DELETE /users/me/children/{child_id}` — 자녀 프로필 삭제 | ✅ |
 
 ---
 
