@@ -7,6 +7,7 @@ from app.core.config import settings
 from app.core.exceptions import AppError, app_error_handler
 from app.domain.auth.router import router as auth_router
 from app.domain.main.router import router as main_router
+from app.domain.story.router import router as story_router
 
 
 @asynccontextmanager
@@ -28,3 +29,4 @@ app.add_exception_handler(AppError, app_error_handler)
 
 app.include_router(auth_router)
 app.include_router(main_router)
+app.include_router(story_router)
