@@ -1,6 +1,6 @@
 import uuid
 from functools import lru_cache
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import Settings, settings as _settings
 from app.core.exceptions import UnauthorizedError
 from app.core.redis import get_redis
+from app.core.s3 import get_s3_client
 from app.core.security import verify_supabase_token
 from app.db.session import get_db
 from app.models.parent import Parent
@@ -78,3 +79,4 @@ RedisDep = Annotated[Redis, Depends(get_redis)]
 CurrentUser = Annotated[Parent, Depends(get_current_user)]
 SupabaseUserID = Annotated[str, Depends(get_supabase_user_id)]
 CurrentUserWithEmail = Annotated[tuple[Parent, str], Depends(get_current_user_with_email)]
+S3ClientDep = Annotated[Any, Depends(get_s3_client)]
