@@ -1,9 +1,13 @@
+import uuid
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import NotFoundError
 from app.domain.user.repository import ChildRepository, ParentRepository
 from app.domain.user.schema import (
     ChildCreateRequest,
     ChildResponse,
+    ChildUpdateRequest,
     ParentResponse,
     ParentUpdateRequest,
 )
@@ -16,13 +20,23 @@ class UserService:
         self.parent_repo = ParentRepository(db)
 
     def get_me(self, parent: Parent, email: str) -> ParentResponse:
-        return ParentResponse(id=parent.id, name=parent.name, email=email)
+        return ParentResponse(
+            id=parent.id,
+            name=parent.name,
+            email=email,
+            profile_image_url=parent.profile_image_url,
+        )
 
     async def update_me(
         self, parent: Parent, data: ParentUpdateRequest, email: str
     ) -> ParentResponse:
-        updated = await self.parent_repo.update_parent(parent, data.name)
-        return ParentResponse(id=updated.id, name=updated.name, email=email)
+        updated = await self.parent_repo.update(parent, data)
+        return ParentResponse(
+            id=updated.id,
+            name=updated.name,
+            email=email,
+            profile_image_url=updated.profile_image_url,
+        )
 
     async def get_children(self, parent: Parent) -> list[ChildResponse]:
         children = await self.repo.get_all_by_parent(parent.id)
@@ -33,3 +47,12 @@ class UserService:
     ) -> ChildResponse:
         child = await self.repo.create(parent.id, data.name, data.profile_image_url)
         return ChildResponse.model_validate(child)
+
+    async def update_child(
+        self, parent: Parent, child_id: uuid.UUID, data: ChildUpdateRequest
+    ) -> ChildResponse:
+        child = await self.repo.get_by_id_and_parent(child_id, parent.id)
+        if child is None:
+            raise NotFoundError("자녀 프로필을 찾을 수 없습니다.")
+        updated = await self.repo.update(child, data)
+        return ChildResponse.model_validate(updated)
