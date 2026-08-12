@@ -14,14 +14,7 @@ class ChildResponse(BaseModel):
 
     id: uuid.UUID
     name: str
-    birth_year: int
 
 
 class ChildCreateRequest(BaseModel):
     name: str
-    birth_year: int
-
-
-class ChildUpdateRequest(BaseModel):
-    name: str | None = None
-    birth_year: int | None = None

@@ -16,32 +16,9 @@ class ChildRepository:
         )
         return list(result.scalars().all())
 
-    async def create(self, parent_id: uuid.UUID, name: str, birth_year: int) -> Child:
-        child = Child(parent_id=parent_id, name=name, birth_year=birth_year)
+    async def create(self, parent_id: uuid.UUID, name: str) -> Child:
+        child = Child(parent_id=parent_id, name=name)
         self.db.add(child)
         await self.db.commit()
         await self.db.refresh(child)
         return child
-
-    async def get_by_id_and_parent(
-        self, child_id: uuid.UUID, parent_id: uuid.UUID
-    ) -> Child | None:
-        result = await self.db.execute(
-            select(Child).where(Child.id == child_id, Child.parent_id == parent_id)
-        )
-        return result.scalar_one_or_none()
-
-    async def update(
-        self, child: Child, name: str | None, birth_year: int | None
-    ) -> Child:
-        if name is not None:
-            child.name = name
-        if birth_year is not None:
-            child.birth_year = birth_year
-        await self.db.commit()
-        await self.db.refresh(child)
-        return child
-
-    async def delete(self, child: Child) -> None:
-        await self.db.delete(child)
-        await self.db.commit()
