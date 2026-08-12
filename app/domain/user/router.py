@@ -13,6 +13,7 @@ from app.core.s3 import generate_presigned_upload_url
 from app.domain.user.schema import (
     ChildCreateRequest,
     ChildResponse,
+    ChildUpdateRequest,
     ParentResponse,
     ParentUpdateRequest,
     PresignedUrlRequest,
@@ -43,7 +44,9 @@ async def update_me(
     service: UserService = Depends(_get_service),
 ):
     parent, email = user_with_email
-    if not body.name or not body.name.strip():
+    if body.name is None and body.profile_image_url is None:
+        raise BadRequestError("수정할 항목을 하나 이상 입력해주세요.")
+    if body.name is not None and not body.name.strip():
         raise BadRequestError("이름은 비워둘 수 없습니다.")
     return await service.update_me(parent, body, email)
 
@@ -57,7 +60,10 @@ async def get_profile_image_presigned_url(
     if not body.content_type.startswith("image/"):
         raise BadRequestError("이미지 파일만 업로드할 수 있습니다.")
     ext = body.content_type.split("/")[-1]
-    key = f"profiles/children/{user.id}/{_uuid.uuid4()}.{ext}"
+    if body.target == "parent":
+        key = f"profiles/parents/{user.id}/{_uuid.uuid4()}.{ext}"
+    else:
+        key = f"profiles/children/{user.id}/{_uuid.uuid4()}.{ext}"
     upload_url = generate_presigned_upload_url(s3, key, body.content_type)
     return PresignedUrlResponse(upload_url=upload_url, object_key=key)
 
@@ -77,3 +83,17 @@ async def create_child(
     service: UserService = Depends(_get_service),
 ):
     return await service.create_child(user, body)
+
+
+@router.patch("/me/children/{child_id}", response_model=ChildResponse)
+async def update_child(
+    child_id: _uuid.UUID,
+    body: ChildUpdateRequest,
+    user: CurrentUser,
+    service: UserService = Depends(_get_service),
+):
+    if body.name is None and body.profile_image_url is None and body.birth_year is None:
+        raise BadRequestError("수정할 항목을 하나 이상 입력해주세요.")
+    if body.name is not None and not body.name.strip():
+        raise BadRequestError("이름은 비워둘 수 없습니다.")
+    return await service.update_child(user, child_id, body)

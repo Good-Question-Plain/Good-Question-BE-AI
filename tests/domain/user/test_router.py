@@ -34,6 +34,14 @@ def mock_svc():
             profile_image_url="https://example.com/img.jpg",
         )
     )
+    svc.update_child = AsyncMock(
+        return_value=ChildResponse(
+            id=CHILD_ID,
+            name="민준",
+            birth_year=2019,
+            profile_image_url="https://example.com/img.jpg",
+        )
+    )
     return svc
 
 
@@ -80,6 +88,12 @@ def test_update_me_returns_200_with_updated_name(client):
     assert resp.json()["name"] == "김철수"
 
 
+def test_update_me_returns_400_when_all_fields_none(client):
+    resp = client.patch("/users/me", json={})
+
+    assert resp.status_code == 400
+
+
 def test_update_me_returns_400_for_empty_name(client):
     resp = client.patch("/users/me", json={"name": ""})
 
@@ -117,24 +131,74 @@ def test_create_child_returns_422_without_profile_image_url(client):
     assert resp.status_code == 422
 
 
-def test_get_presigned_url_returns_200_with_url_and_key(client):
-    resp = client.post(
-        "/users/profile-image/presigned-url",
-        json={"content_type": "image/jpeg"},
+def test_update_child_returns_200_with_updated_fields(client):
+    resp = client.patch(
+        f"/users/me/children/{CHILD_ID}",
+        json={"name": "민준", "birth_year": 2019},
     )
 
     assert resp.status_code == 200
     body = resp.json()
-    assert "upload_url" in body
-    assert "object_key" in body
+    assert body["name"] == "민준"
+    assert body["birth_year"] == 2019
+
+
+def test_update_child_returns_400_when_all_fields_none(client):
+    resp = client.patch(f"/users/me/children/{CHILD_ID}", json={})
+
+    assert resp.status_code == 400
+
+
+def test_update_child_returns_400_for_empty_name(client):
+    resp = client.patch(
+        f"/users/me/children/{CHILD_ID}",
+        json={"name": ""},
+    )
+
+    assert resp.status_code == 400
+
+
+def test_update_child_returns_404_when_not_found(client, mock_svc):
+    from app.core.exceptions import NotFoundError
+
+    mock_svc.update_child = AsyncMock(side_effect=NotFoundError())
+
+    resp = client.patch(
+        f"/users/me/children/{CHILD_ID}",
+        json={"name": "지오"},
+    )
+
+    assert resp.status_code == 404
+
+
+def test_get_presigned_url_returns_200_child_path(client):
+    resp = client.post(
+        "/users/profile-image/presigned-url",
+        json={"content_type": "image/jpeg", "target": "child"},
+    )
+
+    assert resp.status_code == 200
+    body = resp.json()
     assert body["object_key"].startswith(f"profiles/children/{PARENT_ID}/")
     assert body["object_key"].endswith(".jpeg")
+
+
+def test_get_presigned_url_returns_200_parent_path(client):
+    resp = client.post(
+        "/users/profile-image/presigned-url",
+        json={"content_type": "image/png", "target": "parent"},
+    )
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["object_key"].startswith(f"profiles/parents/{PARENT_ID}/")
+    assert body["object_key"].endswith(".png")
 
 
 def test_get_presigned_url_returns_400_for_non_image(client):
     resp = client.post(
         "/users/profile-image/presigned-url",
-        json={"content_type": "application/pdf"},
+        json={"content_type": "application/pdf", "target": "child"},
     )
 
     assert resp.status_code == 400
