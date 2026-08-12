@@ -99,7 +99,7 @@ def generate_presigned_upload_url(
     return client.generate_presigned_url(
         "put_object",
         Params={
-            "Bucket": settings.BUCKET,
+            "Bucket": settings.AWS_S3_BUCKET,
             "Key": key,
             "ContentType": content_type,
         },
