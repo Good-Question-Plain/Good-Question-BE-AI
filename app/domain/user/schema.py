@@ -12,6 +12,11 @@ class ParentResponse(BaseModel):
     profile_image_url: str | None = None
 
 
+class MypageResponse(BaseModel):
+    parent: ParentResponse
+    children: list["ChildResponse"]
+
+
 class ParentUpdateRequest(BaseModel):
     name: str | None = None
     profile_image_url: str | None = None

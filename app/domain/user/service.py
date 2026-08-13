@@ -8,6 +8,7 @@ from app.domain.user.schema import (
     ChildCreateRequest,
     ChildResponse,
     ChildUpdateRequest,
+    MypageResponse,
     ParentResponse,
     ParentUpdateRequest,
 )
@@ -56,3 +57,15 @@ class UserService:
             raise NotFoundError("자녀 프로필을 찾을 수 없습니다.")
         updated = await self.repo.update(child, data)
         return ChildResponse.model_validate(updated)
+
+    async def get_mypage(self, parent: Parent, email: str) -> MypageResponse:
+        children = await self.repo.get_all_by_parent(parent.id)
+        return MypageResponse(
+            parent=ParentResponse(
+                id=parent.id,
+                name=parent.name,
+                email=email,
+                profile_image_url=parent.profile_image_url,
+            ),
+            children=[ChildResponse.model_validate(c) for c in children],
+        )
