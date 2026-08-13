@@ -247,47 +247,14 @@ child_profile ──< child_vocabulary >── scene_vocabulary
 
 ### 소셜 로그인 (카카오·구글·네이버)
 
-OAuth 2.0 Authorization Code Flow 사용. 라이브러리는 `httpx`로 직접 구현 (fastapi[standard]에 포함).
-
-#### 플로우
-
-```
-1. GET /auth/{provider}/login
-   → 각 provider의 OAuth 인증 URL로 리다이렉트
-      (client_id, redirect_uri, scope, state 포함)
-
-2. GET /auth/{provider}/callback   ← provider가 리다이렉트하는 엔드포인트
-   → Authorization Code 수신
-   → httpx로 provider Token URL에 code 교환 요청
-   → 받은 access_token으로 provider Userinfo URL 호출
-   → 이메일·소셜 ID 추출
-   → caregiver upsert (social_provider + social_id 기준)
-   → 자체 Access Token + Refresh Token 발급 (이하 이메일 로그인과 동일)
-```
-
-#### Provider별 엔드포인트
-
-| Provider | Auth URL | Token URL | Userinfo URL | Scope |
-|----------|----------|-----------|--------------|-------|
-| Google | `https://accounts.google.com/o/oauth2/v2/auth` | `https://oauth2.googleapis.com/token` | `https://www.googleapis.com/oauth2/v2/userinfo` | `openid email profile` |
-| Kakao | `https://kauth.kakao.com/oauth/authorize` | `https://kauth.kakao.com/oauth/token` | `https://kapi.kakao.com/v2/user/me` | `profile_nickname account_email` |
-| Naver | `https://nid.naver.com/oauth2.0/authorize` | `https://nid.naver.com/oauth2.0/token` | `https://openapi.naver.com/v1/nid/me` | `name email` |
-
-#### CSRF 방지 (state 파라미터)
-
-```
-1. /auth/{provider}/login 요청 시 서버에서 랜덤 state 값 생성
-2. Redis: SET oauth_state:{state} = "1" (TTL 10분)
-3. callback 수신 시 state 값을 Redis에서 검증 후 삭제
-```
+**Supabase Auth에 위임.** OAuth 2.0 플로우(provider 리다이렉트, callback, token 교환, userinfo 조회, CSRF state 관리)는 Supabase가 처리한다. 별도 OAuth 엔드포인트 및 `OAUTH_REDIRECT_BASE_URL` 환경변수 불필요.
 
 #### 환경변수
 
 ```
-GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
-KAKAO_CLIENT_ID, KAKAO_CLIENT_SECRET
-NAVER_CLIENT_ID, NAVER_CLIENT_SECRET
-OAUTH_REDIRECT_BASE_URL    # 예: https://yourdomain.com
+SUPABASE_URL
+SUPABASE_JWT_SECRET
+SUPABASE_SERVICE_ROLE_KEY
 ```
 
 ### IAM 권한 (S3)
@@ -303,7 +270,6 @@ OAUTH_REDIRECT_BASE_URL    # 예: https://yourdomain.com
 | 키 패턴 | 용도 | TTL |
 |---------|------|-----|
 | `otp:{email}` | 이메일 인증 OTP | 5분 |
-| `oauth_state:{state}` | 소셜 로그인 CSRF 방지 state | 10분 |
 | `refresh:{user_id}` | Refresh Token | 7일 |
 | `story:{story_id}` | 스토리 콘텐츠 | 1시간 |
 | `scene:{scene_id}` | 씬 콘텐츠 | 1시간 |
@@ -413,12 +379,13 @@ Push to main
 ## 10. 배포 구성 (Cloudflare Tunnel)
 
 ```
-외부 HTTPS 요청
+외부 HTTPS 요청 (https://gq.heijionline.com)
   └── Cloudflare (TLS 종료, DDoS 방어)
         └── cloudflared (Docker 서비스)
               └── api:8000 (Docker 내부 HTTP)
 ```
 
+- 도메인: `gq.heijionline.com` (Cloudflare Zero Trust 대시보드에서 Public Hostname으로 등록)
 - 서버 방화벽에서 8000 포트 외부 오픈 불필요
 - SSL 인증서 관리 불필요 (Cloudflare가 처리)
 - `CLOUDFLARE_TUNNEL_TOKEN`은 Cloudflare Zero Trust 대시보드에서 발급
