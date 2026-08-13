@@ -14,6 +14,7 @@ from app.domain.user.schema import (
     ChildCreateRequest,
     ChildResponse,
     ChildUpdateRequest,
+    MypageResponse,
     ParentResponse,
     ParentUpdateRequest,
     PresignedUrlRequest,
@@ -26,6 +27,15 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 def _get_service(db: DBSession) -> UserService:
     return UserService(db)
+
+
+@router.get("/mypage", response_model=MypageResponse)
+async def get_mypage(
+    user_with_email: CurrentUserWithEmail,
+    service: UserService = Depends(_get_service),
+):
+    parent, email = user_with_email
+    return await service.get_mypage(parent, email)
 
 
 @router.get("/me", response_model=ParentResponse)
