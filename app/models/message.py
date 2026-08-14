@@ -15,7 +15,9 @@ class Message(Base):
     session_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("story_sessions.id", ondelete="CASCADE"), nullable=False
     )
-    scene_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("story_scenes.id"), nullable=False)
+    scene_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("story_scenes.id", ondelete="CASCADE"), nullable=False
+    )
     speaker_type: Mapped[str] = mapped_column(String, nullable=False)
     turn_order: Mapped[int] = mapped_column(Integer, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
