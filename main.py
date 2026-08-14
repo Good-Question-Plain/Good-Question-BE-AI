@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.exceptions import AppError, app_error_handler
 from app.domain.auth.router import router as auth_router
+from app.domain.post_activity.router import router as post_activity_router
 from app.domain.user.router import router as user_router
 from app.domain.vocabulary.router import router as vocabulary_router
 
@@ -28,5 +29,6 @@ app.add_middleware(
 app.add_exception_handler(AppError, app_error_handler)
 
 app.include_router(auth_router)
+app.include_router(post_activity_router)
 app.include_router(user_router)
 app.include_router(vocabulary_router)
