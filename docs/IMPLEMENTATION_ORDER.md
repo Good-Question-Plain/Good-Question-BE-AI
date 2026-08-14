@@ -61,14 +61,25 @@
 
 ## Phase 4 — Story 도메인 (스토리 탐색)
 
-> `app/domain/story/` 신규 생성. Redis 캐시 활용. AI 연동 없음.
+> `app/domain/story/` 신규 생성. Redis 캐시 활용. AI 연동 없음.  
+> 설계 문서: `docs/designs/story-domain 2026-08-13 21:55.md`
 
 | 작업 | 상태 |
 |------|------|
-| `GET /stories` — 스토리 목록 (카테고리 필터, 페이지네이션) | ⬜ |
-| `GET /stories/recommended` — 추천 스토리 3개 (Redis 10분 캐시) | ⬜ |
-| `GET /stories/{story_id}` — 스토리 상세 (Redis 1시간 캐시) | ⬜ |
-| `GET /stories/{story_id}/scenes` — 씬 목록 조회 | ⬜ |
+| `GET /stories` — 스토리 목록 (카테고리 필터, 페이지네이션) | ✅ |
+| `GET /stories/recommended` — 추천 스토리 3개 (Redis 10분 캐시) | ✅ |
+| `GET /stories/{story_id}` — 스토리 상세 (Redis 1시간 캐시) | ✅ |
+| `GET /stories/{story_id}/scenes` — 씬 목록 조회 | ✅ |
+
+> 이번에 확정한 값 규약
+> - `stories.status`: `draft` / `published` — 조회 API는 `published` 만 노출
+> - `stories.difficulty`: `쉬움` / `보통` / `어려움`
+> - 카테고리는 `stories.topics` 배열과 매칭 (`category = ANY(topics)`)
+>
+> 남은 의존성
+> - 추천 캐시 키는 `recommended:child:{child_id}` 다. 스토리 시작 시 무효화가 필요하다.
+> - 씬 목록 API는 `scene_goal` / `required_elements` / `conflict` / `preferred_turns` / `max_turns` 를 제외한다.
+> - 스토리 콘텐츠 등록·수정(어드민) API 가 없어 캐시 무효화 로직은 두지 않았다.
 
 ---
 
