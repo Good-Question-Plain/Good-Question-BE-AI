@@ -50,6 +50,7 @@ class StoryScene(Base):
     required_elements: Mapped[list[str]] = mapped_column(ARRAY(String()), nullable=False)
     preferred_turns: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     max_turns: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    scene_title: Mapped[str] = mapped_column(String, nullable=False)
     image_url: Mapped[str | None] = mapped_column(String, nullable=True)
 
     story: Mapped["Story"] = relationship(back_populates="scenes")
