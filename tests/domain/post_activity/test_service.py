@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -104,7 +105,6 @@ async def test_get_activity_returns_shuffled_cards(service, repo):
 async def test_get_activity_is_completed_when_retelling_done(service, repo):
     session = _make_session()
     scenes = _make_scenes(5)
-    from datetime import datetime, timezone
     result = _make_result(attempt_count=1, is_correct=True)
     result.retelling_text = "이야기..."
     result.completed_at = datetime.now(timezone.utc)
@@ -115,6 +115,15 @@ async def test_get_activity_is_completed_when_retelling_done(service, repo):
     resp = await service.get_activity(session.id, session.child.parent_id)
 
     assert resp.is_completed is True
+
+
+async def test_submit_raises_400_when_session_not_completed(service, repo):
+    session = _make_session(status="in_progress")
+    repo.get_session.return_value = session
+    repo.get_or_create_result.return_value = _make_result()
+
+    with pytest.raises(BadRequestError):
+        await service.submit_order(session.id, uuid.uuid4(), [uuid.uuid4()])
 
 
 async def test_submit_raises_400_when_already_correct(service, repo):

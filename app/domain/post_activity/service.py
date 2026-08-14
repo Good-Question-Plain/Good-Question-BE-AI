@@ -51,6 +51,8 @@ class PostActivityService:
         submitted_order: list[uuid.UUID],
     ) -> SubmitResponse:
         session = await self.repo.get_session(session_id, parent_id)
+        if session.status != "completed":
+            raise BadRequestError("세션이 아직 완료되지 않았습니다.")
         activity = await self.repo.get_or_create_result(session_id)
 
         if activity.is_order_correct is True:

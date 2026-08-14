@@ -22,7 +22,7 @@ class PostActivityRepository:
     ) -> StorySession:
         result = await self.db.execute(
             select(StorySession)
-            .options(selectinload(StorySession.child))
+            .options(selectinload(StorySession.child), selectinload(StorySession.story))
             .where(StorySession.id == session_id)
         )
         session = result.scalar_one_or_none()
