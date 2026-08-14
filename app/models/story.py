@@ -60,6 +60,7 @@ class StoryScene(Base):
     mission_examples: Mapped[list[str] | None] = mapped_column(
         ARRAY(String()), nullable=True
     )
+    scene_title: Mapped[str] = mapped_column(String, nullable=False)
     image_url: Mapped[str | None] = mapped_column(String, nullable=True)
 
     story: Mapped["Story"] = relationship(back_populates="scenes")
