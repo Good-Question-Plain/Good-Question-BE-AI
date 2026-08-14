@@ -73,28 +73,45 @@
 
 > 이번에 확정한 값 규약
 > - `stories.status`: `draft` / `published` — 조회 API는 `published` 만 노출
-> - `stories.difficulty`: `쉬움` / `보통` / `어려움`
+> - `stories.difficulty`: `쉬움` / `보통` / `어려움` — Phase 5에서 콘텐츠 스펙에 맞춤
 > - 카테고리는 `stories.topics` 배열과 매칭 (`category = ANY(topics)`)
 >
 > 남은 의존성
-> - 추천 캐시 키는 `recommended:child:{child_id}` 다. 스토리 시작 시 무효화가 필요하다.
-> - 씬 목록 API는 `scene_goal` / `required_elements` / `conflict` / `preferred_turns` / `max_turns` 를 제외한다.
+> - 추천 캐시 `recommended:child:{child_id}` 는 Phase 5 `POST /progress/.../start` 에서 삭제한다.
+> - 씬 목록 API는 `scene_goal` / `required_elements` / `conflict` / `preferred_turns` / `max_turns` 를
+>   제외한다. 진행 API 는 서버 내부에서 직접 읽어 쓴다.
 > - 스토리 콘텐츠 등록·수정(어드민) API 가 없어 캐시 무효화 로직은 두지 않았다.
 
 ---
 
 ## Phase 5 — Progress 도메인 (스토리 진행 + 음성 인터랙션)
 
-> `app/domain/progress/` 신규 생성. STT 및 LLM 연동 포함.
+> `app/domain/progress/` 신규 생성. STT·LLM은 Protocol + 스텁.  
+> 설계 문서: `docs/designs/progress-domain 2026-08-14 11:20.md`
 
 | 작업 | 상태 |
 |------|------|
-| `POST /progress/{story_id}/start` — 스토리 시작 (story_progress 생성) | ⬜ |
-| `GET /progress/active` — 진행 중인 스토리 1개 조회 (메인 화면) | ⬜ |
-| `GET /progress/{story_id}` — 현재 진행 상태 조회 | ⬜ |
-| `POST /progress/{story_id}/scenes/{scene_id}/speak` — 아이 발화 제출 (STT → AI 분석 → 후속질문 or 다음 씬) | ⬜ |
-| `PATCH /progress/{story_id}/scenes/{scene_id}/complete` — 씬 완료 처리 (conversation_turn DB 저장) | ⬜ |
-| Redis 대화 컨텍스트 관리 (`conv:{child_id}:{scene_id}`) | ⬜ |
+| `POST /progress/{story_id}/start` — 세션 시작 또는 이어하기 | ✅ |
+| `GET /progress/active` — 진행 중인 스토리 1개 (메인 화면) | ✅ |
+| `GET /progress/{story_id}` — 현재 진행 상태 조회 | ✅ |
+| `POST /progress/{story_id}/steps/{step_index}` — 단계 진입 + 콘텐츠 | ✅ |
+| `POST /progress/{story_id}/steps/{step_index}/speak` — 아이 발화 (STT → 검증 → 대사) | ✅ |
+| `POST /progress/{story_id}/steps/{step_index}/complete` — 내레이션 단계 완료 | ✅ |
+| Redis 대화 컨텍스트 `conv:{session_id}:{scene_id}` | ✅ |
+| `alembic/008` — scene_type, 미션 컬럼, 대화 필드 nullable | ✅ |
+
+> 경로가 IMPLEMENTATION_ORDER 초안과 다른 이유
+> - 프론트의 `GET /stories/{id}/steps/{index}` 는 세션 위치를 못 바꿔서
+>   `POST /progress/{story_id}/steps/{step_index}` 로 두었다.
+> - `PATCH .../complete` 는 본문 없는 상태 전이라 POST 로 두었다.
+>
+> 남은 의존성
+> - STT / 발화 검증 / 미션 등장 / 종료 판정 / 대사 생성은 `pass` + `AI 이후 개발` 로 비워 두었다.
+>   `app/domain/progress/ai.py` Protocol 만 있고, `speak` 는 세션 가드만 수행한다.
+> - 대화 씬은 AI 가 붙기 전에는 `scene_ended` 가 나지 않아 다음 스텝으로 못 넘어간다.
+> - 대화 씬을 끝나기 전에 앱이 죽으면 그 씬 Redis 는 유실되고, 이어하기 시 opening부터 다시 시작한다.
+> - `required_elements` 는 저장만 하고 런타임에 쓰지 않는다.
+> - 콘텐츠 시딩은 이번 범위 밖. `difficulty` 는 `쉬움/보통/어려움`, 내레이션 씬은 `scene_type=narration`.
 
 ---
 

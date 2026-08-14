@@ -38,9 +38,9 @@ class UtteranceAnalysis(Base):
     message_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("messages.id", ondelete="CASCADE"), unique=True, nullable=False
     )
-    child_intent: Mapped[str] = mapped_column(String, nullable=False)
+    child_intent: Mapped[str | None] = mapped_column(String, nullable=True)
     main_point: Mapped[str | None] = mapped_column(Text, nullable=True)
-    detected_elements: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    detected_elements: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     utterance_validity: Mapped[str] = mapped_column(String, nullable=False)
     analysis_version: Mapped[str] = mapped_column(String, nullable=False, default="mvp_v1")
 
