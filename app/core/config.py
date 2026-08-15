@@ -37,6 +37,12 @@ class Settings(BaseSettings):
     NAVER_CLIENT_SECRET: str = ""
     OAUTH_REDIRECT_BASE_URL: str = ""
 
+    # Anthropic (학습 리포트 분석)
+    ANTHROPIC_API_KEY: str = ""
+    ANTHROPIC_MODEL: str = "claude-sonnet-4-6"
+    ANTHROPIC_MAX_TOKENS: int = 2000
+    ANTHROPIC_TIMEOUT_SECONDS: float = 60.0
+
     # CORS
     CORS_ORIGINS: str = "http://localhost:3000"
 

@@ -3,9 +3,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+import app.models  # noqa: F401 — 관계 문자열 해석을 위해 전체 모델 등록
 from app.core.config import settings
 from app.core.exceptions import AppError, app_error_handler
 from app.domain.auth.router import router as auth_router
+from app.domain.vocabulary.router import reports_router, vocabulary_router
 
 
 @asynccontextmanager
@@ -26,3 +28,5 @@ app.add_middleware(
 app.add_exception_handler(AppError, app_error_handler)
 
 app.include_router(auth_router)
+app.include_router(reports_router)
+app.include_router(vocabulary_router)

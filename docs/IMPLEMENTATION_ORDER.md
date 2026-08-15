@@ -32,6 +32,9 @@
 ## Phase 2 — DB 스키마 전체 확정
 
 > Phase 3~6 모두의 선행 조건. 반드시 먼저 완료.
+> ⚠️ 아래 표는 TRD 5장 기준의 초기 계획이다. 실제로는 `alembic/002` 에서 다른 이름·구조로 반영되었다
+> (`parents`, `children`, `child_consents`, `stories`, `story_scenes`, `story_sessions`, `messages`,
+> `utterance_analyses`, `post_activity_results`). 어휘 테이블은 Phase 6 의 리포트 테이블로 대체됨.
 
 | 작업 | 상태 |
 |------|------|
@@ -82,6 +85,7 @@
 | `GET /progress/active` — 진행 중인 스토리 1개 조회 (메인 화면) | ⬜ |
 | `GET /progress/{story_id}` — 현재 진행 상태 조회 | ⬜ |
 | `POST /progress/{story_id}/scenes/{scene_id}/speak` — 아이 발화 제출 (STT → AI 분석 → 후속질문 or 다음 씬) | ⬜ |
+| ↳ `utterance_analyses.detected_elements` 는 `[{"element":"EMOTION","evidence":"..."}]` 객체 배열로 저장 (Phase 6 대표 발화 선정의 입력) | ⬜ |
 | `PATCH /progress/{story_id}/scenes/{scene_id}/complete` — 씬 완료 처리 (conversation_turn DB 저장) | ⬜ |
 | Redis 대화 컨텍스트 관리 (`conv:{child_id}:{scene_id}`) | ⬜ |
 
@@ -89,10 +93,26 @@
 
 ## Phase 6 — Vocabulary 도메인 (학습 리포트)
 
-> `app/domain/vocabulary/` 신규 생성. LLM 기반 리포트 생성 포함.
+> `app/domain/vocabulary/`. 설계 문서: `docs/designs/vocabulary-report 2026-08-12 23:05.md`
+> 리포트는 `story_sessions` 단위로 생성되므로 `child_id` 쿼리로 아이를 특정하고, 서비스가 최근 완료 세션을 찾는다.
 
 | 작업 | 상태 |
 |------|------|
-| `POST /reports/{story_id}/generate` — 스토리 완료 후 LLM 리포트 생성 트리거 | ⬜ |
-| `GET /reports/{story_id}` — 학습 리포트 조회 (어휘/표현/논리 전체) | ⬜ |
-| `GET /vocabulary` — 아이가 사용·궁금해한 어휘 목록 조회 | ⬜ |
+| `app/models/report.py` (learning_report + report_vocabulary) | ✅ |
+| `alembic/003` — learning_reports, report_vocabularies 마이그레이션 | ✅ |
+| `POST /reports/{story_id}/generate?child_id=` — 리포트 생성 트리거 (BackgroundTasks, 202) | ✅ |
+| `GET /reports/{story_id}?child_id=` — 학습 리포트 조회 (어휘/표현/논리 전체) | ✅ |
+| `GET /vocabulary?child_id=&kind=&limit=&offset=` — 아이가 사용·궁금해한 어휘 목록 조회 | ✅ |
+| `analyzer.py` — 리포트 분석기 인터페이스 + 스텁 구현 | ✅ |
+| 대표 발화 선정 (규칙 점수 + 동점 처리) — `docs/designs/representative-utterance 2026-08-12 23:25.md` | ✅ |
+| `alembic/004` — learning_reports 대표 발화 컬럼 추가 | ✅ |
+| 실제 LLM(Anthropic) 분석기 — `docs/designs/llm-report-analyzer 2026-08-13 00:30.md` | ✅ |
+| 리포트 화면 대응 (집에서 이어가볼까요 / 이전·다음 리포트 / 헤더 정보) — `docs/designs/report-screen-coverage 2026-08-13 12:50.md` | ✅ |
+| `alembic/005` — story_topic_questions, daily_life_questions 컬럼 추가 | ✅ |
+
+> 남은 의존성
+> - 소유권 검증은 `Caregiver.id == parents.id` 가정에 의존한다.
+>   Phase 3(User 도메인)에서 `parents` 레코드 생성이 붙어야 실제로 동작한다.
+> - `ANTHROPIC_API_KEY` 가 비어 있으면 스텁 분석기로 동작한다. 실제 키로 end-to-end 호출은 아직 미검증.
+> - 리포트 생성 트리거는 Phase 5 의 스토리 완료 처리에서 `ReportService.request_generation` 을
+>   호출하도록 연결해야 프론트가 `POST /reports/.../generate` 를 직접 부르지 않아도 된다.
