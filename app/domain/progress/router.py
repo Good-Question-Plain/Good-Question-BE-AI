@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile
 
 from app.core.dependencies import CurrentUser, DBSession, RedisDep
 from app.core.exceptions import BadRequestError
@@ -8,6 +8,8 @@ from app.domain.progress.schema import (
     ActiveProgressResponse,
     CompleteResponse,
     ProgressStatusResponse,
+    SceneVocabularyListResponse,
+    SelectSceneVocabularyRequest,
     SpeakResponse,
     StartResponse,
     StepResponse,
@@ -72,14 +74,16 @@ async def speak(
     step_index: int,
     child_id: uuid.UUID,
     user: CurrentUser,
+    background_tasks: BackgroundTasks,
     audio: UploadFile = File(..., description="아이 음성 (m4a)"),
     service: ProgressService = Depends(_get_service),
 ):
     data = await audio.read()
     if not data:
         raise BadRequestError("오디오 파일이 비어 있습니다.")
-    # AI 이후 개발: do_stt 에 data 전달
-    return await service.speak(user, child_id, story_id, step_index, data)
+    return await service.speak(
+        user, child_id, story_id, step_index, data, background_tasks
+    )
 
 
 @router.post(
@@ -91,6 +95,47 @@ async def complete_step(
     step_index: int,
     child_id: uuid.UUID,
     user: CurrentUser,
+    background_tasks: BackgroundTasks,
     service: ProgressService = Depends(_get_service),
 ):
-    return await service.complete(user, child_id, story_id, step_index)
+    return await service.complete(
+        user, child_id, story_id, step_index, background_tasks
+    )
+
+
+@router.post(
+    "/{story_id}/steps/{step_index}/vocabularies",
+    response_model=SceneVocabularyListResponse,
+)
+async def select_step_vocabulary(
+    story_id: uuid.UUID,
+    step_index: int,
+    child_id: uuid.UUID,
+    body: SelectSceneVocabularyRequest,
+    user: CurrentUser,
+    service: ProgressService = Depends(_get_service),
+):
+    if step_index < 1:
+        raise BadRequestError("단계 번호는 1 이상이어야 합니다.")
+    return await service.select_scene_vocabulary(
+        user, child_id, story_id, step_index, body.scene_vocabulary_id
+    )
+
+
+@router.delete(
+    "/{story_id}/steps/{step_index}/vocabularies/{scene_vocabulary_id}",
+    response_model=SceneVocabularyListResponse,
+)
+async def unselect_step_vocabulary(
+    story_id: uuid.UUID,
+    step_index: int,
+    scene_vocabulary_id: uuid.UUID,
+    child_id: uuid.UUID,
+    user: CurrentUser,
+    service: ProgressService = Depends(_get_service),
+):
+    if step_index < 1:
+        raise BadRequestError("단계 번호는 1 이상이어야 합니다.")
+    return await service.unselect_scene_vocabulary(
+        user, child_id, story_id, step_index, scene_vocabulary_id
+    )

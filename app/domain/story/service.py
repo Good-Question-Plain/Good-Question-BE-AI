@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ForbiddenError, NotFoundError
+from app.domain.story.character import scene_character_name
 from app.domain.story.repository import StoryRepository
 from app.domain.story.schema import (
     SceneItem,
@@ -88,7 +89,9 @@ class StoryService:
             scene_count=len(story.scenes),
             characters=list(
                 dict.fromkeys(
-                    s.character_name for s in story.scenes if s.character_name
+                    name
+                    for s in story.scenes
+                    if (name := scene_character_name(s))
                 )
             ),
         )
@@ -102,7 +105,19 @@ class StoryService:
             return _scene_list_adapter.validate_json(cached)
 
         story = await self._get_published(story_id)
-        scenes = [SceneItem.model_validate(s) for s in story.scenes]
+        scenes = [
+            SceneItem(
+                id=s.id,
+                scene_order=s.scene_order,
+                scene_type=s.scene_type,  # type: ignore[arg-type]
+                scene_description=s.scene_description,
+                character_name=scene_character_name(s),
+                character_opening=s.character_opening,
+                character_closing=s.character_closing,
+                image_url=s.image_url,
+            )
+            for s in story.scenes
+        ]
         await self.redis.set(
             key, _scene_list_adapter.dump_json(scenes), ex=_STORY_TTL_SECONDS
         )

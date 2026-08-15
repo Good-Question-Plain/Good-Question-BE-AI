@@ -21,6 +21,15 @@ class Settings(BaseSettings):
     AWS_S3_BUCKET: str = ""
     AWS_REGION: str = "ap-northeast-2"
 
+    # OpenAI (STT 정규화, 장면 심판, 캐릭터 대사)
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-5.6-luna"
+    OPENAI_TIMEOUT_SECONDS: float = 60.0
+
+    # Groq (Whisper STT)
+    GROQ_API_KEY: str = ""
+    GROQ_STT_MODEL: str = "whisper-large-v3"
+
     # CORS
     CORS_ORIGINS: str = "http://localhost:3000"
 

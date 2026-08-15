@@ -1,0 +1,401 @@
+{
+  "story": {
+    "id": "1ddceceb-60ae-5785-9775-cd4611373125",
+    "content_key": "s_banggui_daughter_in_law_001",
+    "title": "방귀 뀌는 며느리",
+    "summary": "큰 방귀를 부끄러워하던 며느리가 자신의 다름을 장점으로 바꾸는 이야기",
+    "thumbnail_url": null,
+    "difficulty": "보통",
+    "topics": [
+      "다름",
+      "자기이해",
+      "장점 발견"
+    ],
+    "estimated_minutes": 20,
+    "post_activity_config": null,
+    "status": "published"
+  },
+  "scenes": [
+    {
+      "id": "d79d6d2a-0a34-5fab-8cb2-0ad05bed6ee9",
+      "content_key": "sc_banggui_01",
+      "scene_order": 1,
+      "scene_type": "narration",
+      "scene_description": "옛날 어느 마을에 방귀를 아주 크게 뀌는 며느리가 살았습니다. 며느리는 시집에 온 뒤로 늘 얌전하고 예의 바르게 보이고 싶었습니다. 시댁 식구들이 자신을 이상하게 볼까 봐 걱정했기 때문입니다.",
+      "conflict": null,
+      "character_key": null,
+      "character_name": null,
+      "character_opening": null,
+      "character_closing": null,
+      "scene_goal": null,
+      "required_elements": null,
+      "preferred_turns": null,
+      "max_turns": null,
+      "mission_condition": null,
+      "mission_examples": null,
+      "image_url": null,
+      "vocabularies": [
+        {
+          "id": "048de43a-1bba-5d4a-a8eb-c864eb4fc03e",
+          "word": "며느리",
+          "definition": "아들과 결혼해서 시집에 온 여자",
+          "example_sentence": "며느리가 시댁 식구들과 함께 살았어요."
+        },
+        {
+          "id": "e17ab1d4-6f4d-5635-b8a2-4df8f105a2e5",
+          "word": "방귀",
+          "definition": "뱃속의 가스가 엉덩이 쪽으로 나오는 것",
+          "example_sentence": "며느리는 방귀가 아주 크게 나왔어요."
+        },
+        {
+          "id": "74e2a5db-385d-5f2e-9105-f6e30048ecdb",
+          "word": "얌전하다",
+          "definition": "행동이 조용하고 예의가 바르다",
+          "example_sentence": "며느리는 얌전하고 예의 바르게 보이고 싶었어요."
+        }
+      ]
+    },
+    {
+      "id": "cbc8521a-23c4-5ed0-982f-8e38ad0b576e",
+      "content_key": "sc_banggui_02",
+      "scene_order": 2,
+      "scene_type": "narration",
+      "scene_description": "그래서 며느리는 방귀가 나오려고 할 때마다 꾹꾹 참았습니다. 하루도 참고, 이틀도 참고, 그렇게 오래 참다 보니 배는 점점 빵빵하게 부풀어 올랐고 얼굴은 노랗게 변했습니다. 몸도 마음도 너무 힘들었지만, 며느리는 차마 가족들에게 솔직하게 말하지 못했습니다.",
+      "conflict": null,
+      "character_key": null,
+      "character_name": null,
+      "character_opening": null,
+      "character_closing": null,
+      "scene_goal": null,
+      "required_elements": null,
+      "preferred_turns": null,
+      "max_turns": null,
+      "mission_condition": null,
+      "mission_examples": null,
+      "image_url": null,
+      "vocabularies": [
+        {
+          "id": "7d775c97-26c4-5dff-8b7c-36c581cfd1d9",
+          "word": "참다",
+          "definition": "하고 싶은 것을 억지로 안 하고 견디다",
+          "example_sentence": "며느리는 방귀가 나오려고 할 때마다 꾹꾹 참았어요."
+        },
+        {
+          "id": "c2ff89b0-b105-5525-b018-ec4e4bff46ca",
+          "word": "부풀다",
+          "definition": "공기가 들어가 커지거나 빵빵해지다",
+          "example_sentence": "오래 참다 보니 배가 빵빵하게 부풀어 올랐어요."
+        },
+        {
+          "id": "552ea71d-77ce-5d5b-a253-2624dc020a1f",
+          "word": "솔직하다",
+          "definition": "숨기지 않고 있는 그대로 말하다",
+          "example_sentence": "며느리는 가족들에게 솔직하게 말하지 못했어요."
+        }
+      ]
+    },
+    {
+      "id": "5167ac7d-29e0-5c26-a27f-10ee5e2e24a0",
+      "content_key": "sc_banggui_03",
+      "scene_order": 3,
+      "scene_type": "dialogue",
+      "scene_description": "며느리가 큰 방귀를 가족에게 들킬까 봐 걱정하고 있다. 방귀는 누구나 뀌는 일이지만, 며느리에게는 큰 비밀처럼 느껴진다.",
+      "conflict": "며느리가 방귀를 숨기고 가족에게 솔직하게 말하지 못한다.",
+      "character_key": "ch_banggui_daughter_in_law",
+      "character_name": "며느리",
+      "character_opening": "ㅇㅇ아, 내 방귀가 너무 크다는 걸 알면 가족들이 나를 이상하게 생각하지 않을까?",
+      "character_closing": "그래도 아직은 못 말하겠어. 조금만 더 참아 볼게.",
+      "scene_goal": "방귀를 숨기고 싶어 하는 며느리의 입장을 이해하고, 공감해 주며 문제를 숨기지 않고 솔직하게 말할 수 있는 용기를 준다.",
+      "required_elements": [
+        "PERSPECTIVE",
+        "EMOTION",
+        "REASON",
+        "SOLUTION"
+      ],
+      "preferred_turns": 3,
+      "max_turns": 4,
+      "mission_condition": null,
+      "mission_examples": null,
+      "image_url": null,
+      "vocabularies": [
+        {
+          "id": "d97cc1ea-88f7-5776-8429-c754a062a2bb",
+          "word": "이상하다",
+          "definition": "보통이랑 달라서 낯설게 느껴지다",
+          "example_sentence": "가족들이 나를 이상하게 생각할까 봐 걱정돼요."
+        },
+        {
+          "id": "a66e22c1-155d-5040-b3c3-2d0c18509de0",
+          "word": "비밀",
+          "definition": "다른 사람에게 알리지 않고 숨기는 일",
+          "example_sentence": "며느리에게 방귀는 큰 비밀처럼 느껴졌어요."
+        },
+        {
+          "id": "3f0f13d8-8722-512e-8cd0-b9f108c57a77",
+          "word": "용기",
+          "definition": "무섭거나 부끄러워도 해 보려는 마음",
+          "example_sentence": "솔직하게 말하려면 용기가 필요해요."
+        }
+      ]
+    },
+    {
+      "id": "e26517cc-af43-5bea-840e-ea2f43066096",
+      "content_key": "sc_banggui_04",
+      "scene_order": 4,
+      "scene_type": "narration",
+      "scene_description": "며느리는 더 이상 참을 수 없어 몰래 살짝만 방귀를 뀌려고 합니다. 하지만 오래 참았던 탓에 방귀가 크게 터져 나왔습니다. 마당의 먼지가 휘리릭 날아가고, 기왓장이 달그락거리고, 시아버지의 갓까지 휙 날아가 버렸습니다.",
+      "conflict": null,
+      "character_key": null,
+      "character_name": null,
+      "character_opening": null,
+      "character_closing": null,
+      "scene_goal": null,
+      "required_elements": null,
+      "preferred_turns": null,
+      "max_turns": null,
+      "mission_condition": null,
+      "mission_examples": null,
+      "image_url": null,
+      "vocabularies": [
+        {
+          "id": "a524b050-09ed-56b4-9749-4b90f3e61a89",
+          "word": "살짝",
+          "definition": "아주 조금, 티가 나지 않게",
+          "example_sentence": "며느리는 살짝만 방귀를 뀌려고 했어요."
+        },
+        {
+          "id": "2a846bba-4802-570c-b3bf-648f5e0f691b",
+          "word": "기왓장",
+          "definition": "지붕을 덮는 넓적한 흙이나 돌 조각",
+          "example_sentence": "큰 방귀 소리에 기왓장이 달그락거렸어요."
+        },
+        {
+          "id": "0d1a2864-73d9-5d4e-839c-a6a27a51ff2c",
+          "word": "갓",
+          "definition": "예전에 어른들이 머리에 쓰던 모자",
+          "example_sentence": "시아버지의 갓이 휙 날아갔어요."
+        }
+      ]
+    },
+    {
+      "id": "46a15fbb-8a1c-5b25-9d9b-8c377e9a301b",
+      "content_key": "sc_banggui_05",
+      "scene_order": 5,
+      "scene_type": "dialogue",
+      "scene_description": "시아버지가 며느리의 큰 방귀에 깜짝 놀라 화를 낸다. 며느리는 일부러 그런 것이 아니지만 마음이 작아진다.",
+      "conflict": "시아버지가 요란한 방귀를 이유로 며느리와 함께 살 수 없다고 한다.",
+      "character_key": "ch_banggui_father_in_law",
+      "character_name": "시아버지",
+      "character_opening": "아이고, 이게 무슨 일이냐! 우리 집안이 다 흔들리는구나! 이렇게 창피한 며느리와 함께 못 살겠다! 그렇지 않니?",
+      "character_closing": "흥, 그래도 도저히 이런 며느리와는 함께 살 수 없으니 친정으로 데려다줘야겠다.",
+      "scene_goal": "시아버지가 놀란 마음을 이해하면서도, 며느리가 일부러 그런 것이 아니라 오래 참아서 힘들었던 것임을 말하고, 며느리를 따뜻하게 이해해 달라고 설득한다.",
+      "required_elements": [
+        "PERSPECTIVE",
+        "EMOTION",
+        "REASON",
+        "SOLUTION"
+      ],
+      "preferred_turns": 4,
+      "max_turns": 5,
+      "mission_condition": null,
+      "mission_examples": null,
+      "image_url": null,
+      "vocabularies": [
+        {
+          "id": "7fbd784e-5c43-54e1-9eee-ffd0df9caae0",
+          "word": "창피하다",
+          "definition": "다른 사람 앞에서 부끄럽고 면이 서지 않다",
+          "example_sentence": "시아버지는 며느리의 방귀가 창피하다고 했어요."
+        },
+        {
+          "id": "67b8dda4-7532-58a3-94b8-a44c423741ac",
+          "word": "요란하다",
+          "definition": "소리나 움직임이 크고 시끄럽다",
+          "example_sentence": "며느리의 방귀가 너무 요란해서 집안이 흔들렸어요."
+        },
+        {
+          "id": "e24284d8-7e91-5e94-b56a-7a1c621991f0",
+          "word": "친정",
+          "definition": "며느리가 시집오기 전에 살던 본래 집",
+          "example_sentence": "시아버지는 며느리를 친정으로 데려다주겠다고 했어요."
+        }
+      ]
+    },
+    {
+      "id": "d83d5d79-45d3-5f0d-9fdf-fe526cc7f6a9",
+      "content_key": "sc_banggui_06",
+      "scene_order": 6,
+      "scene_type": "narration",
+      "scene_description": "한참 걷다 보니 아랫마을 길가에 아주 높은 배나무가 한 그루 서 있었습니다. 나무 꼭대기에는 노랗고 탐스러운 배들이 주렁주렁 매달려 있었습니다. 시아버지는 배를 보자 군침이 돌았습니다. 마침 아랫마을 사람들도 그 배를 먹고 싶어 했지만, 나무가 너무 높아 아무도 딸 수 없었습니다.",
+      "conflict": null,
+      "character_key": null,
+      "character_name": null,
+      "character_opening": null,
+      "character_closing": null,
+      "scene_goal": null,
+      "required_elements": null,
+      "preferred_turns": null,
+      "max_turns": null,
+      "mission_condition": null,
+      "mission_examples": null,
+      "image_url": null,
+      "vocabularies": [
+        {
+          "id": "59806742-04e3-5102-9a5b-c3535692c8a0",
+          "word": "배나무",
+          "definition": "배를 여는 과일나무",
+          "example_sentence": "길가에 아주 높은 배나무가 서 있었어요."
+        },
+        {
+          "id": "776def53-101f-52be-a887-2ee075e85694",
+          "word": "탐스럽다",
+          "definition": "잘 익고 먹음직스러워 갖고 싶게 보이다",
+          "example_sentence": "노랗고 탐스러운 배가 주렁주렁 매달렸어요."
+        },
+        {
+          "id": "ff245b0e-db7c-5231-8d03-60bc9bf12ccb",
+          "word": "군침",
+          "definition": "맛있는 것을 보고 입에 고이는 침",
+          "example_sentence": "시아버지는 배를 보자 군침이 돌았어요."
+        }
+      ]
+    },
+    {
+      "id": "e425cde0-7465-55fa-85d4-4de2e5558c2e",
+      "content_key": "sc_banggui_07",
+      "scene_order": 7,
+      "scene_type": "dialogue",
+      "scene_description": "높은 배나무의 배를 아무도 따지 못해 마을 사람들이 난처해 한다. 며느리의 큰 방귀로 배를 떨어뜨릴 수 있을지 생각해 볼 차례다.",
+      "conflict": "배가 너무 높아 장대를 써도, 나무에 올라가도 따지 못한다.",
+      "character_key": "ch_banggui_village_chief",
+      "character_name": "마을 이장",
+      "character_opening": "이 배나무는 해마다 탐스러운 배가 열리지만, 너무 높아서 아무도 딸 수가 없었단다. 무슨 뾰족한 방법이 없겠는가?",
+      "character_closing": "아이고, 방귀 뀌는 며느리 덕분에 온 마을이 배 잔치를 할 수 있겠구려, 고맙소!",
+      "scene_goal": "높은 배나무의 배를 떨어뜨릴 방법을 생각하고, 며느리의 큰 방귀를 안전하게 사용할 수 있는 해결책을 제안한다.",
+      "required_elements": [
+        "SOLUTION",
+        "REASON",
+        "REQUEST",
+        "RESULT"
+      ],
+      "preferred_turns": 4,
+      "max_turns": 5,
+      "mission_condition": "아이가 며느리의 방귀로 배를 떨어뜨리자고 말했거나, 해결 방향은 말했지만 방법이 구체적이지 않거나, 두 번 이상 대화했는데도 실행 방법이 나오지 않았을 때",
+      "mission_examples": [
+        "무엇을 사용할 것인지",
+        "주변에 있는 마을 사람들과 시아버지는 어디로 피해야 할지",
+        "며느리에게 어떻게 부탁할 것인지",
+        "그 결과 어떤 일이 생길지"
+      ],
+      "image_url": null,
+      "vocabularies": [
+        {
+          "id": "f9035189-c466-5d55-86bb-0bc16edfb7cf",
+          "word": "뾰족하다",
+          "definition": "문제 푸는 방법이 재치 있고 확실하다",
+          "example_sentence": "배를 딸 뾰족한 방법이 없을까요?"
+        },
+        {
+          "id": "875a7247-59dc-5ec0-acee-15726cc3544c",
+          "word": "장대",
+          "definition": "아주 긴 막대기",
+          "example_sentence": "긴 장대를 가져와도 높은 배에 닿지 않았어요."
+        },
+        {
+          "id": "869bb91b-4123-5ae2-8223-cf1d48c31a44",
+          "word": "잔치",
+          "definition": "여럿이 모여 음식을 나누며 기뻐하는 자리",
+          "example_sentence": "배가 떨어져서 온 마을이 배 잔치를 했어요."
+        }
+      ]
+    },
+    {
+      "id": "af63ba02-f6c8-5f92-be04-7197693f8da9",
+      "content_key": "sc_banggui_08",
+      "scene_order": 8,
+      "scene_type": "narration",
+      "scene_description": "시아버지는 며느리의 방귀가 시끄럽고 별난 것이 아니라, 모두를 도울 수 있는 특별한 힘이라는 것을 깨닫습니다. 자신이 며느리를 구박했던 일을 후회하고 사과합니다.",
+      "conflict": null,
+      "character_key": null,
+      "character_name": null,
+      "character_opening": null,
+      "character_closing": null,
+      "scene_goal": null,
+      "required_elements": null,
+      "preferred_turns": null,
+      "max_turns": null,
+      "mission_condition": null,
+      "mission_examples": null,
+      "image_url": null,
+      "vocabularies": [
+        {
+          "id": "115ab210-62d2-5901-a2ca-ae7bc2446690",
+          "word": "깨닫다",
+          "definition": "몰랐던 것을 이제야 알게 되다",
+          "example_sentence": "시아버지는 며느리의 방귀가 특별한 힘이라는 것을 깨달았어요."
+        },
+        {
+          "id": "bf0467dc-3094-5832-ac8c-09f8c296f035",
+          "word": "후회하다",
+          "definition": "잘못한 일을 뒤늦게 아쉽게 여기다",
+          "example_sentence": "시아버지는 며느리를 구박한 일을 후회했어요."
+        },
+        {
+          "id": "c8ea17bc-35e7-57b3-8a1d-a33a955e50a1",
+          "word": "사과",
+          "definition": "잘못을 인정하고 미안하다고 하는 것",
+          "example_sentence": "시아버지는 며느리에게 사과했어요."
+        }
+      ]
+    },
+    {
+      "id": "6da81aec-a364-5008-a382-bb3bfa88b19e",
+      "content_key": "sc_banggui_09",
+      "scene_order": 9,
+      "scene_type": "dialogue",
+      "scene_description": "시아버지가 사과한 뒤, 며느리가 자신이 숨기고 싶었던 특징이 누군가에게 도움이 될 수 있다는 것을 알게 된다.",
+      "conflict": "며느리가 자신의 다름을 아직 부끄러워할지 말지 망설인다.",
+      "character_key": "ch_banggui_daughter_in_law",
+      "character_name": "며느리",
+      "character_opening": "ㅇㅇ이 덕분에 내 방귀가 누군가에게 도움이 될 수 있다는 걸 처음 알았어. 이제는 방귀 소리가 큰 걸 부끄러워하지 않아도 될까?",
+      "character_closing": "이제는 부끄러워하며 숨기지 않고, 조심해서 좋은 일에 써 볼게.",
+      "scene_goal": "다름을 인정하고, 자신의 특징을 긍정적으로 받아들이는 태도를 말한다.",
+      "required_elements": [
+        "EMOTION",
+        "PERSPECTIVE",
+        "RESULT",
+        "SOLUTION"
+      ],
+      "preferred_turns": 3,
+      "max_turns": 4,
+      "mission_condition": "아이가 처음에는 단점처럼 보였던 특징을 좋은 일에 쓸 수 있다고 말했거나, 며느리의 방귀가 도움이 된다고 인정하는 말을 했을 때",
+      "mission_examples": [
+        "목소리가 큰 친구는 멀리 있는 사람을 부를 수 있어요.",
+        "질문이 많은 친구는 새로운 생각을 찾을 수 있어요.",
+        "힘이 센 친구는 무거운 물건을 옮길 때 도울 수 있어요.",
+        "조용한 친구는 다른 사람의 말을 잘 들어 줄 수 있어요."
+      ],
+      "image_url": null,
+      "vocabularies": [
+        {
+          "id": "d4375ee3-1d96-5c98-bb54-76b543408eff",
+          "word": "다름",
+          "definition": "다른 사람과 같지 않은 점",
+          "example_sentence": "남들과 다른 점도 좋은 일에 쓸 수 있어요."
+        },
+        {
+          "id": "a853b791-7141-5c3e-ae4c-dae21c5da042",
+          "word": "특징",
+          "definition": "그 사람만의 두드러진 모습이나 성질",
+          "example_sentence": "며느리는 큰 방귀 소리가 자신의 특징이라는 걸 알게 되었어요."
+        },
+        {
+          "id": "56582076-68a1-52a6-828b-65c9585d8213",
+          "word": "장점",
+          "definition": "잘하는 점, 좋은 점",
+          "example_sentence": "단점처럼 보이던 일이 장점이 될 수도 있어요."
+        }
+      ]
+    }
+  ]
+}

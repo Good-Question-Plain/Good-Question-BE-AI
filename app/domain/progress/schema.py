@@ -13,6 +13,22 @@ class MissionPrompt(BaseModel):
     examples: list[str]
 
 
+class SceneVocabularyItem(BaseModel):
+    id: uuid.UUID
+    word: str
+    definition: str | None = None
+    example_sentence: str | None = None
+    selected: bool = False
+
+
+class SceneVocabularyListResponse(BaseModel):
+    items: list[SceneVocabularyItem]
+
+
+class SelectSceneVocabularyRequest(BaseModel):
+    scene_vocabulary_id: uuid.UUID
+
+
 class StepResponse(BaseModel):
     step_index: int
     scene_count: int
@@ -20,12 +36,13 @@ class StepResponse(BaseModel):
     scene_id: uuid.UUID
     scene_description: str | None = None
     image_url: str | None = None
-    character_name: str | None = None
+    character_name: str | None = None  # 한글 표시명. ch_ 슬러그 아님.
     character_opening: str | None = None
     character_closing: str | None = None
     max_turns: int | None = None
     turn: int | None = None
     mission: MissionPrompt | None = None
+    vocabularies: list[SceneVocabularyItem] = []
 
 
 class StartResponse(BaseModel):
