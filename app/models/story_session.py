@@ -15,9 +15,11 @@ class StorySession(Base):
     child_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("children.id", ondelete="CASCADE"), nullable=False
     )
-    story_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("stories.id"), nullable=False)
+    story_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("stories.id", ondelete="CASCADE"), nullable=False
+    )
     current_scene_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("story_scenes.id"), nullable=True
+        ForeignKey("story_scenes.id", ondelete="SET NULL"), nullable=True
     )
 
     # 장면 내 상태 — 장면 전환 시 초기화 대상

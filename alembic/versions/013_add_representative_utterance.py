@@ -1,15 +1,15 @@
 """add representative utterance to learning reports
 
-Revision ID: 004
-Revises: 003
+Revision ID: 013
+Revises: 012
 Create Date: 2026-08-12
 """
 
 import sqlalchemy as sa
 from alembic import op
 
-revision = "004"
-down_revision = "003"
+revision = "013"
+down_revision = "012"
 branch_labels = None
 depends_on = None
 

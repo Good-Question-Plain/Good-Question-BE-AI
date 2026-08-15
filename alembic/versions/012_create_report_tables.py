@@ -1,7 +1,7 @@
 """create learning report tables
 
-Revision ID: 003
-Revises: 002
+Revision ID: 012
+Revises: 011
 Create Date: 2026-08-12
 """
 
@@ -9,8 +9,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 from alembic import op
 
-revision = "003"
-down_revision = "002"
+revision = "012"
+down_revision = "011"
 branch_labels = None
 depends_on = None
 
