@@ -4,6 +4,7 @@
 실제 LLM 연동 시 `LLMReportAnalyzer` 를 추가하고 `get_report_analyzer()` 가 그것을 반환하도록 바꾼다.
 """
 
+import asyncio
 import re
 import uuid
 from collections import Counter
@@ -129,6 +130,7 @@ class ReportContext:
     story_title: str
     child_name: str
     utterances: list[UtteranceInput] = field(default_factory=list)
+    chat_history: list[dict] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -547,9 +549,35 @@ def _build_user_prompt(context: ReportContext, selected: UtteranceInput | None) 
     return "\n".join(lines)
 
 
+class OpenAIReportAnalyzer:
+    """첨부된 make_report 프롬프트/JSON 규격을 그대로 쓰는 분석기."""
+
+    name = "openai"
+    version = "story_fn_v1"
+
+    async def analyze(self, context: ReportContext) -> ReportDraft:
+        from app.domain.ai.report_map import map_make_report
+        from app.domain.ai.story_functions import make_report
+
+        history = context.chat_history or [
+            {"role": "user", "content": u.text.strip()}
+            for u in context.utterances
+            if u.text.strip()
+        ]
+        payload = await asyncio.to_thread(make_report, history)
+        draft = map_make_report(payload, context)
+        draft.analyzer_name = f"{self.name}:{settings.OPENAI_MODEL}"
+        draft.report_version = self.version
+        return draft
+
+
 @lru_cache
 def get_report_analyzer() -> ReportAnalyzer:
-    """API 키가 없으면 스텁으로 동작한다 (로컬 개발·테스트용)."""
+    """OpenAI → Anthropic → 스텁 순으로 고른다."""
+    from app.core.ai_clients import is_openai_configured
+
+    if is_openai_configured():
+        return OpenAIReportAnalyzer()
     if is_llm_configured():
         return LLMReportAnalyzer()
     return StubReportAnalyzer()

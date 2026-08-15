@@ -107,12 +107,16 @@
 | 대표 발화 선정 (규칙 점수 + 동점 처리) — `docs/designs/representative-utterance 2026-08-12 23:25.md` | ✅ |
 | `alembic/004` — learning_reports 대표 발화 컬럼 추가 | ✅ |
 | 실제 LLM(Anthropic) 분석기 — `docs/designs/llm-report-analyzer 2026-08-13 00:30.md` | ✅ |
+| OpenAI `make_report` 분석기 — `docs/designs/story-ai 2026-08-15 13:20.md` | ✅ |
 | 리포트 화면 대응 (집에서 이어가볼까요 / 이전·다음 리포트 / 헤더 정보) — `docs/designs/report-screen-coverage 2026-08-13 12:50.md` | ✅ |
 | `alembic/005` — story_topic_questions, daily_life_questions 컬럼 추가 | ✅ |
+| `alembic/006` — scene_vocabularies, child_vocabularies (궁금한 단어) | ✅ |
+| 완료된 리포트 재생성 + `enqueue_for_completed_session` (이야기 완료 훅) | ✅ |
+| 궁금한 단어(`kind=curious`)를 세션 선택 결과와 병합 | ✅ |
 
 > 남은 의존성
 > - 소유권 검증은 `Caregiver.id == parents.id` 가정에 의존한다.
 >   Phase 3(User 도메인)에서 `parents` 레코드 생성이 붙어야 실제로 동작한다.
-> - `ANTHROPIC_API_KEY` 가 비어 있으면 스텁 분석기로 동작한다. 실제 키로 end-to-end 호출은 아직 미검증.
-> - 리포트 생성 트리거는 Phase 5 의 스토리 완료 처리에서 `ReportService.request_generation` 을
->   호출하도록 연결해야 프론트가 `POST /reports/.../generate` 를 직접 부르지 않아도 된다.
+> - `OPENAI_API_KEY` 가 있으면 `make_report` 분석기를 쓴다. 없고 `ANTHROPIC_API_KEY` 만 있으면 기존 Anthropic 분석기, 둘 다 없으면 스텁.
+> - `POST /reports/{story_id}/generate` 는 같은 세션의 완료 리포트가 있어도 이번 회차로 다시 만든다.
+>   이야기 완료 시 자동 생성은 `ReportService.enqueue_for_completed_session` 을 Phase 5 완료 처리에서 호출하면 붙는다.

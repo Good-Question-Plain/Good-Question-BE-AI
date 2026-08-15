@@ -1,3 +1,4 @@
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,7 +12,9 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://redis:6379/0"
 
     # JWT
-    JWT_SECRET_KEY: str
+    JWT_SECRET_KEY: str = Field(
+        validation_alias=AliasChoices("JWT_SECRET_KEY", "SUPABASE_JWT_SECRET")
+    )
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
@@ -37,11 +40,16 @@ class Settings(BaseSettings):
     NAVER_CLIENT_SECRET: str = ""
     OAUTH_REDIRECT_BASE_URL: str = ""
 
-    # Anthropic (학습 리포트 분석)
+    # Anthropic (학습 리포트 분석, OpenAI 키가 없을 때 폴백)
     ANTHROPIC_API_KEY: str = ""
     ANTHROPIC_MODEL: str = "claude-sonnet-4-6"
     ANTHROPIC_MAX_TOKENS: int = 2000
     ANTHROPIC_TIMEOUT_SECONDS: float = 60.0
+
+    # OpenAI (학습 리포트 make_report)
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-5.6-luna"
+    OPENAI_TIMEOUT_SECONDS: float = 60.0
 
     # CORS
     CORS_ORIGINS: str = "http://localhost:3000"

@@ -54,3 +54,6 @@ class StoryScene(Base):
 
     story: Mapped["Story"] = relationship(back_populates="scenes")
     messages: Mapped[list["Message"]] = relationship(back_populates="scene")
+    vocabularies: Mapped[list["SceneVocabulary"]] = relationship(
+        back_populates="scene", cascade="all, delete-orphan"
+    )

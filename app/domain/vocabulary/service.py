@@ -28,6 +28,7 @@ from app.models.child import Child
 from app.models.message import Message
 from app.models.report import LearningReport
 from app.models.story_session import StorySession
+from app.models.vocabulary import ChildVocabulary
 
 _MAX_FAILURE_REASON_LENGTH = 500
 
@@ -55,25 +56,34 @@ class ReportService:
         session = await self._resolve_session(parent_id, child_id, story_id)
         report = await self.repo.get_report_by_session(session.id)
 
+        if report is not None and report.status == "generating":
+            raise ConflictError("리포트를 생성하는 중입니다. 잠시 후 다시 확인해주세요.")
+        report = await self.enqueue_for_completed_session(session, background_tasks)
+        if report is None:
+            raise ConflictError("리포트를 생성하는 중입니다. 잠시 후 다시 확인해주세요.")
+        return GenerateReportResponse(
+            report_id=report.id, session_id=session.id, status=report.status  # type: ignore[arg-type]
+        )
+
+    async def enqueue_for_completed_session(
+        self,
+        session: StorySession,
+        background_tasks: BackgroundTasks,
+    ) -> LearningReport | None:
+        """이야기 완료 시 호출. 기존 리포트가 있으면 이번 회차 내용으로 다시 생성한다."""
+        report = await self.repo.get_report_by_session(session.id)
         if report is None:
             try:
                 report = await self.repo.create_generating_report(session)
             except IntegrityError:
-                # 동시 요청이 먼저 같은 세션의 리포트를 만든 경우 (session_id UNIQUE)
-                raise ConflictError("리포트를 생성하는 중입니다. 잠시 후 다시 확인해주세요.")
+                return None
         elif report.status == "generating":
-            raise ConflictError("리포트를 생성하는 중입니다. 잠시 후 다시 확인해주세요.")
-        elif report.status == "completed":
-            return GenerateReportResponse(
-                report_id=report.id, session_id=session.id, status="completed"
-            )
+            return report
         else:
             report = await self.repo.reset_to_generating(report)
 
         background_tasks.add_task(generate_report_task, report.id)
-        return GenerateReportResponse(
-            report_id=report.id, session_id=session.id, status="generating"
-        )
+        return report
 
     async def get_report(
         self, parent_id: uuid.UUID, child_id: uuid.UUID, story_id: uuid.UUID
@@ -94,11 +104,41 @@ class ReportService:
         offset: int,
     ) -> VocabularyListResponse:
         await self._verify_child(parent_id, child_id)
-        total, rows = await self.repo.list_vocabularies(child_id, kind, limit, offset)
-        return VocabularyListResponse(
-            total=total,
-            items=[VocabularyItem.model_validate(row) for row in rows],
-        )
+        if kind == "curious":
+            total, rows = await self.repo.list_curious_vocabularies(child_id, limit, offset)
+            return VocabularyListResponse(
+                total=total,
+                items=[self._curious_item(row) for row in rows],
+            )
+        if kind == "used":
+            total, rows = await self.repo.list_vocabularies(child_id, "used", limit, offset)
+            return VocabularyListResponse(
+                total=total,
+                items=[VocabularyItem.model_validate(row) for row in rows],
+            )
+
+        curious_total, _ = await self.repo.list_curious_vocabularies(child_id, 1, 0)
+        used_total, _ = await self.repo.list_vocabularies(child_id, "used", 1, 0)
+        total = curious_total + used_total
+        items: list[VocabularyItem] = []
+        if offset < curious_total:
+            take = min(limit, curious_total - offset)
+            _, curious_rows = await self.repo.list_curious_vocabularies(
+                child_id, take, offset
+            )
+            items.extend(self._curious_item(row) for row in curious_rows)
+            remain = limit - len(items)
+            if remain > 0:
+                _, used_rows = await self.repo.list_vocabularies(
+                    child_id, "used", remain, 0
+                )
+                items.extend(VocabularyItem.model_validate(row) for row in used_rows)
+        else:
+            _, used_rows = await self.repo.list_vocabularies(
+                child_id, "used", limit, offset - curious_total
+            )
+            items.extend(VocabularyItem.model_validate(row) for row in used_rows)
+        return VocabularyListResponse(total=total, items=items)
 
     async def run_generation(self, report_id: uuid.UUID) -> None:
         """백그라운드 실행 진입점. 예외를 밖으로 던지지 않고 리포트 상태에 기록한다."""
@@ -112,6 +152,14 @@ class ReportService:
             await self.repo.mark_failed(report, self._failure_reason(exc))
             return
 
+        vocabularies = [asdict(v) for v in draft.vocabularies if v.kind != "curious"]
+        seen_curious: set[str] = set()
+        for item in await self.repo.list_session_curious_words(report.session_id):
+            if item["word"] in seen_curious:
+                continue
+            seen_curious.add(item["word"])
+            vocabularies.append(item)
+
         await self.repo.save_result(
             report,
             speech_summary=draft.speech_summary,
@@ -121,7 +169,7 @@ class ReportService:
             logic_items=[item.model_dump() for item in draft.logic_items],
             story_topic_questions=[p.model_dump() for p in draft.story_topic_questions],
             daily_life_questions=[p.model_dump() for p in draft.daily_life_questions],
-            vocabularies=[asdict(v) for v in draft.vocabularies],
+            vocabularies=vocabularies,
             representative=asdict(draft.representative) if draft.representative else None,
             analyzer_name=draft.analyzer_name,
             report_version=draft.report_version,
@@ -133,12 +181,24 @@ class ReportService:
             raise NotFoundError("학습 세션을 찾을 수 없습니다.")
 
         messages = await self.repo.list_child_utterances(report.session_id)
+        conversation = await self.repo.list_session_messages(report.session_id)
         context = ReportContext(
             story_title=session.story.title,
             child_name=session.child.name,
             utterances=[self._to_utterance_input(message) for message in messages],
+            chat_history=self._to_chat_history(conversation),
         )
         return await get_report_analyzer().analyze(context)
+
+    @staticmethod
+    def _to_chat_history(messages: list[Message]) -> list[dict]:
+        history: list[dict] = []
+        for message in messages:
+            if not message.text.strip():
+                continue
+            role = "user" if message.speaker_type == "child" else "AI"
+            history.append({"role": role, "content": message.text})
+        return history
 
     @staticmethod
     def _to_utterance_input(message: Message) -> UtteranceInput:
@@ -174,6 +234,18 @@ class ReportService:
     @staticmethod
     def _failure_reason(exc: Exception) -> str:
         return f"{type(exc).__name__}: {exc}"[:_MAX_FAILURE_REASON_LENGTH]
+
+    @staticmethod
+    def _curious_item(row: ChildVocabulary) -> VocabularyItem:
+        word = row.scene_vocabulary
+        return VocabularyItem(
+            id=row.id,
+            word=word.word,
+            kind="curious",
+            definition=word.definition,
+            example_sentence=word.example_sentence,
+            created_at=row.saved_at,
+        )
 
     @staticmethod
     def _to_response(

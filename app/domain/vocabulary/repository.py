@@ -9,6 +9,7 @@ from app.models.child import Child
 from app.models.message import Message
 from app.models.report import LearningReport, ReportVocabulary
 from app.models.story_session import StorySession
+from app.models.vocabulary import ChildVocabulary, SceneVocabulary
 
 CHILD_SPEAKER = "child"
 SESSION_COMPLETED = "completed"
@@ -105,6 +106,14 @@ class ReportRepository:
             .order_by(Message.turn_order)
         )
         return list(result.scalars().unique())
+
+    async def list_session_messages(self, session_id: uuid.UUID) -> list[Message]:
+        result = await self.db.execute(
+            select(Message)
+            .where(Message.session_id == session_id)
+            .order_by(Message.turn_order, Message.created_at)
+        )
+        return list(result.scalars().all())
 
     async def save_result(
         self,
@@ -206,3 +215,46 @@ class ReportRepository:
             .offset(offset)
         )
         return total or 0, list(result.scalars())
+
+    async def list_session_curious_words(self, session_id: uuid.UUID) -> list[dict]:
+        result = await self.db.execute(
+            select(SceneVocabulary)
+            .join(ChildVocabulary)
+            .where(
+                ChildVocabulary.session_id == session_id,
+                ChildVocabulary.kind == "curious",
+            )
+            .order_by(ChildVocabulary.saved_at, SceneVocabulary.word)
+        )
+        return [
+            {
+                "word": row.word,
+                "kind": "curious",
+                "definition": row.definition,
+                "example_sentence": row.example_sentence,
+            }
+            for row in result.scalars()
+        ]
+
+    async def list_curious_vocabularies(
+        self,
+        child_id: uuid.UUID,
+        limit: int,
+        offset: int,
+    ) -> tuple[int, list[ChildVocabulary]]:
+        conditions = [
+            ChildVocabulary.child_id == child_id,
+            ChildVocabulary.kind == "curious",
+        ]
+        total = await self.db.scalar(
+            select(func.count()).select_from(ChildVocabulary).where(*conditions)
+        )
+        result = await self.db.execute(
+            select(ChildVocabulary)
+            .options(joinedload(ChildVocabulary.scene_vocabulary))
+            .where(*conditions)
+            .order_by(ChildVocabulary.saved_at.desc(), ChildVocabulary.id)
+            .limit(limit)
+            .offset(offset)
+        )
+        return total or 0, list(result.scalars().unique())
