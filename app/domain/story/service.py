@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from pydantic import TypeAdapter
 from redis.asyncio import Redis
@@ -6,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ForbiddenError, NotFoundError
+from app.core.s3 import resolve_image_url
 from app.domain.story.character import scene_character_name
 from app.domain.story.repository import StoryRepository
 from app.domain.story.schema import (
@@ -28,10 +30,11 @@ _scene_list_adapter = TypeAdapter(list[SceneItem])
 
 
 class StoryService:
-    def __init__(self, db: AsyncSession, redis: Redis) -> None:
+    def __init__(self, db: AsyncSession, redis: Redis, s3: Any) -> None:
         self.repo = StoryRepository(db)
         self.db = db
         self.redis = redis
+        self.s3 = s3
 
     async def _verify_child_ownership(self, parent: Parent, child_id: uuid.UUID) -> None:
         result = await self.db.execute(
@@ -115,7 +118,7 @@ class StoryService:
                 character_name=scene_character_name(s),
                 character_opening=s.character_opening,
                 character_closing=s.character_closing,
-                image_url=s.image_url,
+                image_url=resolve_image_url(self.s3, s.image_url),
             )
             for s in story.scenes
         ]

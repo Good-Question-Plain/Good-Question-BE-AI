@@ -13,9 +13,9 @@ down_revision = "016"
 branch_labels = None
 depends_on = None
 
-BASE_URL = "https://goodquestion-s3-bucket.s3.ap-northeast-2.amazonaws.com/scenes/banggui"
+S3_PREFIX = "scenes/banggui"
 
-# scene_order → (scene_id, image filename)
+# (scene_id, S3 object key)
 SCENE_IMAGES = [
     ("32222222-2222-2222-2222-222222222201", "scene_01.png"),
     ("32222222-2222-2222-2222-222222222202", "scene_02.png"),
@@ -34,9 +34,9 @@ def upgrade() -> None:
     for scene_id, filename in SCENE_IMAGES:
         conn.execute(
             sa.text(
-                "UPDATE story_scenes SET image_url = :url WHERE id = :id"
+                "UPDATE story_scenes SET image_url = :key WHERE id = :id"
             ),
-            {"url": f"{BASE_URL}/{filename}", "id": scene_id},
+            {"key": f"{S3_PREFIX}/{filename}", "id": scene_id},
         )
 
 

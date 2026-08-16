@@ -35,8 +35,12 @@ def generate_presigned_upload_url(
     )
 
 
-def get_public_url(key: str) -> str:
-    return f"https://{settings.AWS_S3_BUCKET}.s3.{settings.AWS_REGION}.amazonaws.com/{key}"
+def generate_presigned_get_url(client: Any, key: str, expires: int = 3600) -> str:
+    return client.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": settings.AWS_S3_BUCKET, "Key": key},
+        ExpiresIn=expires,
+    )
 
 
 async def check_object_exists(client: Any, key: str) -> bool:
@@ -51,8 +55,8 @@ async def check_object_exists(client: Any, key: str) -> bool:
         raise
 
 
-def resolve_image_url(key: str | None) -> str | None:
-    """object key → 공개 URL 변환. None이거나 이미 URL이면 그대로 반환."""
+def resolve_image_url(client: Any, key: str | None) -> str | None:
+    """object key → presigned GET URL 변환. None이거나 이미 URL이면 그대로 반환."""
     if key is None or key.startswith("http"):
         return key
-    return get_public_url(key)
+    return generate_presigned_get_url(client, key)
