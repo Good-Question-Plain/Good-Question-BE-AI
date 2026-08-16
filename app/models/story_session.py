@@ -52,6 +52,7 @@ class StorySession(Base):
     post_activity_result: Mapped["PostActivityResult | None"] = relationship(
         back_populates="session"
     )
+    learning_report: Mapped["LearningReport | None"] = relationship(back_populates="session")
     child_vocabularies: Mapped[list["ChildVocabulary"]] = relationship(
         back_populates="session", cascade="all, delete-orphan"
     )

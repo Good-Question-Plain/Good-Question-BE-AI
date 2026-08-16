@@ -32,6 +32,9 @@
 ## Phase 2 — DB 스키마 전체 확정
 
 > Phase 3~6 모두의 선행 조건. 반드시 먼저 완료.
+> ⚠️ 아래 표는 TRD 5장 기준의 초기 계획이다. 실제로는 `alembic/002` 에서 다른 이름·구조로 반영되었다
+> (`parents`, `children`, `child_consents`, `stories`, `story_scenes`, `story_sessions`, `messages`,
+> `utterance_analyses`, `post_activity_results`). 어휘 테이블은 Phase 6 의 리포트 테이블로 대체됨.
 
 | 작업 | 상태 |
 |------|------|
@@ -120,10 +123,30 @@
 
 ## Phase 6 — Vocabulary 도메인 (학습 리포트)
 
-> `app/domain/vocabulary/` 신규 생성. LLM 기반 리포트 생성 포함.
+> `app/domain/vocabulary/`. 설계 문서: `docs/designs/vocabulary-report 2026-08-12 23:05.md`
+> 리포트는 `story_sessions` 단위로 생성되므로 `child_id` 쿼리로 아이를 특정하고, 서비스가 최근 완료 세션을 찾는다.
 
 | 작업 | 상태 |
 |------|------|
-| `POST /reports/{story_id}/generate` — 스토리 완료 후 LLM 리포트 생성 트리거 | ⬜ |
-| `GET /reports/{story_id}` — 학습 리포트 조회 (어휘/표현/논리 전체) | ⬜ |
-| `GET /vocabulary` — 아이가 사용·궁금해한 어휘 목록 조회 | ⬜ |
+| 기존 단어 저장 API (`GET /vocabulary/saved`, `GET /{id}`, save/unsave) | ✅ |
+| `app/models/report.py` (learning_report + report_vocabulary) | ✅ |
+| `alembic/012` — learning_reports, report_vocabularies 마이그레이션 | ✅ |
+| `POST /reports/{story_id}/generate?child_id=` — 리포트 생성 트리거 (BackgroundTasks, 202) | ✅ |
+| `GET /reports/{story_id}?child_id=` — 학습 리포트 조회 (어휘/표현/논리 전체) | ✅ |
+| `GET /vocabulary?child_id=&kind=&limit=&offset=` — 아이가 사용·궁금해한 어휘 목록 조회 | ✅ |
+| `analyzer.py` — 리포트 분석기 인터페이스 + 스텁 구현 | ✅ |
+| 대표 발화 선정 (규칙 점수 + 동점 처리) — `docs/designs/representative-utterance 2026-08-12 23:25.md` | ✅ |
+| `alembic/013` — learning_reports 대표 발화 컬럼 추가 | ✅ |
+| 실제 LLM(Anthropic) 분석기 — `docs/designs/llm-report-analyzer 2026-08-13 00:30.md` | ✅ |
+| OpenAI `make_report` 분석기 — `docs/designs/story-ai 2026-08-15 13:20.md` | ✅ |
+| 리포트 화면 대응 (집에서 이어가볼까요 / 이전·다음 리포트 / 헤더 정보) — `docs/designs/report-screen-coverage 2026-08-13 12:50.md` | ✅ |
+| `alembic/014` — story_topic_questions, daily_life_questions 컬럼 추가 | ✅ |
+| `alembic/015` — child_vocabularies.session_id, kind | ✅ |
+| 완료된 리포트 재생성 + `enqueue_for_completed_session` (이야기 완료 훅) | ✅ |
+| 궁금한 단어(`kind=curious`)를 세션 선택 결과와 병합 | ✅ |
+
+> 남은 의존성
+> - 인증은 `parents.id` (Supabase JWT `sub`) 기준이다.
+> - `OPENAI_API_KEY` 가 있으면 `make_report` 분석기를 쓴다. 없고 `ANTHROPIC_API_KEY` 만 있으면 기존 Anthropic 분석기, 둘 다 없으면 스텁.
+> - `POST /reports/{story_id}/generate` 는 같은 세션의 완료 리포트가 있어도 이번 회차로 다시 만든다.
+> - 내레이션 마지막 장면 `complete` 에서 리포트를 자동 생성한다. 대화 씬 종료 훅은 스토리 AI speak 머지 후 붙는다.
