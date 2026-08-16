@@ -9,6 +9,8 @@ from app.core.exceptions import AppError, app_error_handler
 from app.domain.auth.router import router as auth_router
 from app.domain.main.router import router as main_router
 from app.domain.story.router import router as story_router
+from app.domain.main.router import router as main_router
+from app.domain.story.router import router as story_router
 from app.domain.post_activity.router import router as post_activity_router
 from app.domain.progress.router import router as progress_router
 from app.domain.story.router import router as story_router
