@@ -33,9 +33,24 @@ class AuthService:
         if resp.status_code != 200:
             raise UnauthorizedError("비밀번호가 올바르지 않습니다.")
 
+    async def change_password(
+        self, user_id: str, email: str, current_password: str, new_password: str
+    ) -> None:
+        await self.verify_password(email, current_password)
+        await self._update_supabase_password(user_id, new_password)
+
     async def delete_account(self, parent: Parent) -> None:
         await self._delete_supabase_user(str(parent.id))
         await self.repo.delete(parent)
+
+    async def _update_supabase_password(self, user_id: str, new_password: str) -> None:
+        url = f"{settings.SUPABASE_URL}/auth/v1/admin/users/{user_id}"
+        async with httpx.AsyncClient() as client:
+            resp = await client.put(
+                url, headers=_SUPABASE_HEADERS, json={"password": new_password}
+            )
+        if resp.status_code not in (200, 201):
+            raise BadRequestError("비밀번호 변경에 실패했습니다.")
 
     async def _delete_supabase_user(self, user_id: str) -> None:
         url = f"{settings.SUPABASE_URL}/auth/v1/admin/users/{user_id}"
