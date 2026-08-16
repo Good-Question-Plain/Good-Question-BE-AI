@@ -2,7 +2,7 @@ import uuid
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile
 
-from app.core.dependencies import CurrentUser, DBSession, RedisDep
+from app.core.dependencies import CurrentUser, DBSession, RedisDep, S3ClientDep
 from app.core.exceptions import BadRequestError
 from app.domain.progress.schema import (
     ActiveProgressResponse,
@@ -19,8 +19,8 @@ from app.domain.progress.service import ProgressService
 router = APIRouter(prefix="/progress", tags=["progress"])
 
 
-def _get_service(db: DBSession, redis: RedisDep) -> ProgressService:
-    return ProgressService(db, redis)
+def _get_service(db: DBSession, redis: RedisDep, s3: S3ClientDep) -> ProgressService:
+    return ProgressService(db, redis, s3)
 
 
 @router.get("/active", response_model=ActiveProgressResponse | None)
