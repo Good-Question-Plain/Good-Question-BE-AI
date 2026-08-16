@@ -15,6 +15,13 @@ class Settings(BaseSettings):
     SUPABASE_JWT_SECRET: str = ""  # 레거시 HS256 방식에서 사용, 현재는 JWKS로 대체됨
     SUPABASE_SERVICE_ROLE_KEY: str
 
+    @property
+    def supabase_base_url(self) -> str:
+        """REST API 경로가 포함된 URL도 안전하게 base URL만 반환"""
+        from urllib.parse import urlparse
+        parsed = urlparse(self.SUPABASE_URL)
+        return f"{parsed.scheme}://{parsed.netloc}"
+
     # AWS S3
     AWS_ACCESS_KEY_ID: str = ""
     AWS_SECRET_ACCESS_KEY: str = ""
