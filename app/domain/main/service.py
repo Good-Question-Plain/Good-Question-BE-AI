@@ -1,16 +1,21 @@
 import uuid
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.s3 import resolve_image_url
 from app.domain.main.repository import MainRepository
 from app.domain.main.schema import (ContinueStoryResponse, MainPageResponse, RecommendedStoryResponse, )
 from app.domain.story.repository import StoryRepository
+
 _RECOMMENDED_LIMIT = 3
 
+
 class MainService:
-    def __init__(self, db: AsyncSession) -> None:
+    def __init__(self, db: AsyncSession, s3: Any) -> None:
         self.repo = MainRepository(db)
         self.story_repo = StoryRepository(db)
+        self.s3 = s3
 
     async def get_main_page(self, child_id: uuid.UUID) -> MainPageResponse:
         continue_story = await self._build_continue_story(child_id)
@@ -19,7 +24,7 @@ class MainService:
             RecommendedStoryResponse(
                 id=story.id,
                 title=story.title,
-                thumbnail_url=story.thumbnail_url,
+                thumbnail_url=resolve_image_url(self.s3, story.thumbnail_url),
                 estimated_minutes=story.estimated_minutes,
                 topics=story.topics,
             )
@@ -45,6 +50,6 @@ class MainService:
         return ContinueStoryResponse(
             story_id=session.story_id,
             title=session.story.title,
-            thumbnail_url=session.story.thumbnail_url,
+            thumbnail_url=resolve_image_url(self.s3, session.story.thumbnail_url),
             progress_percentage=progress_percentage,
         )
