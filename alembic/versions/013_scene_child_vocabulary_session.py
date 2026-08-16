@@ -1,15 +1,15 @@
 """session-scoped child vocabulary picks for curious words
 
-Revision ID: 011
-Revises: 010
+Revision ID: 013
+Revises: 012
 Create Date: 2026-08-15
 """
 
 import sqlalchemy as sa
 from alembic import op
 
-revision = "011"
-down_revision = "010"
+revision = "013"
+down_revision = "012"
 branch_labels = None
 depends_on = None
 

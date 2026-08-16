@@ -109,6 +109,7 @@ class StoryService:
             SceneItem(
                 id=s.id,
                 scene_order=s.scene_order,
+                scene_title=s.scene_title,
                 scene_type=s.scene_type,  # type: ignore[arg-type]
                 scene_description=s.scene_description,
                 character_name=scene_character_name(s),

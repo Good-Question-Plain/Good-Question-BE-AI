@@ -429,6 +429,7 @@ class ProgressService:
             scene_count=scene_count,
             kind=_kind(scene),  # type: ignore[arg-type]
             scene_id=scene.id,
+            scene_title=scene.scene_title,
             scene_description=_fill_name(scene.scene_description, child_name),
             image_url=scene.image_url,
             character_name=scene_character_name(scene),
