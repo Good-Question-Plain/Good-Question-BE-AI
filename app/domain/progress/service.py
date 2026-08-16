@@ -9,6 +9,7 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import BadRequestError, ConflictError, ForbiddenError, NotFoundError
+from app.core.s3 import resolve_image_url
 from app.domain.progress.ai import get_story_ai, to_openai_messages
 from app.domain.progress.repository import COMPLETED, ProgressRepository
 from app.domain.progress.schema import (
@@ -87,9 +88,10 @@ def _conv_history(conv: dict[str, Any]) -> list[dict[str, str]]:
 
 
 class ProgressService:
-    def __init__(self, db: AsyncSession, redis: Redis) -> None:
+    def __init__(self, db: AsyncSession, redis: Redis, s3: Any) -> None:
         self.repo = ProgressRepository(db)
         self.redis = redis
+        self.s3 = s3
 
     async def start(
         self, parent: Parent, child_id: uuid.UUID, story_id: uuid.UUID
@@ -132,7 +134,7 @@ class ProgressService:
             session_id=session.id,
             story_id=session.story_id,
             title=session.story.title,
-            thumbnail_url=session.story.thumbnail_url,
+            thumbnail_url=resolve_image_url(self.s3, session.story.thumbnail_url),
             current_step=session.current_scene.scene_order,
             scene_count=scene_count,
         )
@@ -431,7 +433,7 @@ class ProgressService:
             scene_id=scene.id,
             scene_title=scene.scene_title,
             scene_description=_fill_name(scene.scene_description, child_name),
-            image_url=scene.image_url,
+            image_url=resolve_image_url(self.s3, scene.image_url),
             character_name=scene_character_name(scene),
             character_opening=_fill_name(scene.character_opening, child_name),
             character_closing=None,

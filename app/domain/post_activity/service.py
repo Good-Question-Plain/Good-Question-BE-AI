@@ -1,9 +1,11 @@
 import random
 import uuid
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import BadRequestError
+from app.core.s3 import resolve_image_url
 from app.domain.post_activity.repository import PostActivityRepository
 from app.domain.post_activity.schema import (
     ActivityResponse,
@@ -15,8 +17,9 @@ from app.domain.post_activity.schema import (
 
 
 class PostActivityService:
-    def __init__(self, db: AsyncSession) -> None:
+    def __init__(self, db: AsyncSession, s3: Any) -> None:
         self.repo = PostActivityRepository(db)
+        self.s3 = s3
 
     async def get_activity(
         self, session_id: uuid.UUID, parent_id: uuid.UUID
@@ -29,7 +32,7 @@ class PostActivityService:
         scenes = await self.repo.get_scenes(session.story_id)
 
         cards = [
-            SceneCard(scene_id=s.id, title=s.scene_title, image_url=s.image_url)
+            SceneCard(scene_id=s.id, title=s.scene_title, image_url=resolve_image_url(self.s3, s.image_url))
             for s in scenes
         ]
         random.shuffle(cards)

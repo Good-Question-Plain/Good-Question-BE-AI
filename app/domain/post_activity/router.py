@@ -2,7 +2,7 @@ import uuid
 
 from fastapi import APIRouter, Depends
 
-from app.core.dependencies import CurrentUser, DBSession
+from app.core.dependencies import CurrentUser, DBSession, S3ClientDep
 from app.domain.post_activity.schema import (
     ActivityResponse,
     RetellRequest,
@@ -15,8 +15,8 @@ from app.domain.post_activity.service import PostActivityService
 router = APIRouter(prefix="/sessions", tags=["post-activity"])
 
 
-def _get_service(db: DBSession) -> PostActivityService:
-    return PostActivityService(db)
+def _get_service(db: DBSession, s3: S3ClientDep) -> PostActivityService:
+    return PostActivityService(db, s3)
 
 
 @router.get("/{session_id}/post-activity", response_model=ActivityResponse)

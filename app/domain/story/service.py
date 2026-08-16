@@ -36,6 +36,16 @@ class StoryService:
         self.redis = redis
         self.s3 = s3
 
+    def _story_list_item(self, story: Story) -> StoryListItem:
+        return StoryListItem(
+            id=story.id,
+            title=story.title,
+            thumbnail_url=resolve_image_url(self.s3, story.thumbnail_url),
+            estimated_minutes=story.estimated_minutes,
+            topics=story.topics,
+            difficulty=story.difficulty,  # type: ignore[arg-type]
+        )
+
     async def _verify_child_ownership(self, parent: Parent, child_id: uuid.UUID) -> None:
         result = await self.db.execute(
             select(Child).where(Child.id == child_id, Child.parent_id == parent.id)
@@ -51,7 +61,7 @@ class StoryService:
     ) -> StoryListResponse:
         stories, total = await self.repo.list_published(category, limit, offset)
         return StoryListResponse(
-            items=[StoryListItem.model_validate(s) for s in stories],
+            items=[self._story_list_item(s) for s in stories],
             total=total,
             limit=limit,
             offset=offset,
@@ -68,7 +78,7 @@ class StoryService:
             return _story_list_adapter.validate_json(cached)
 
         stories = await self.repo.list_recommended(child_id, RECOMMENDED_COUNT)
-        items = [StoryListItem.model_validate(s) for s in stories]
+        items = [self._story_list_item(s) for s in stories]
         await self.redis.set(
             key, _story_list_adapter.dump_json(items), ex=_RECOMMENDED_TTL_SECONDS
         )
@@ -85,7 +95,7 @@ class StoryService:
             id=story.id,
             title=story.title,
             summary=story.summary,
-            thumbnail_url=story.thumbnail_url,
+            thumbnail_url=resolve_image_url(self.s3, story.thumbnail_url),
             difficulty=story.difficulty,
             topics=story.topics,
             estimated_minutes=story.estimated_minutes,
