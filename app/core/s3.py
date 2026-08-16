@@ -55,8 +55,16 @@ async def check_object_exists(client: Any, key: str) -> bool:
         raise
 
 
+_S3_KEY_PREFIXES = ("profiles/", "scenes/")
+
+
 def resolve_image_url(client: Any, key: str | None) -> str | None:
-    """object key → presigned GET URL 변환. None이거나 이미 URL이면 그대로 반환."""
+    """object key → presigned GET URL 변환.
+    None이거나 이미 URL이면 그대로 반환.
+    알려진 S3 prefix(profiles/, scenes/)가 아닌 값은 식별자로 취급해 그대로 반환.
+    """
     if key is None or key.startswith("http"):
         return key
-    return generate_presigned_get_url(client, key)
+    if any(key.startswith(p) for p in _S3_KEY_PREFIXES):
+        return generate_presigned_get_url(client, key)
+    return key
