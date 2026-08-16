@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import app.models  # noqa: F401 — 관계 문자열 해석을 위해 전체 모델 등록
 from app.core.config import settings
 from app.core.exceptions import AppError, app_error_handler
+from app.core.security import _get_jwks
 from app.domain.auth.router import router as auth_router
 from app.domain.post_activity.router import router as post_activity_router
 from app.domain.progress.router import router as progress_router
@@ -16,6 +17,7 @@ from app.domain.vocabulary.router import reports_router, vocabulary_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await _get_jwks()
     yield
 
 
