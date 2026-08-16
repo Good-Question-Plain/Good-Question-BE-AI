@@ -55,7 +55,7 @@ async def check_object_exists(client: Any, key: str) -> bool:
         raise
 
 
-_S3_KEY_PREFIXES = ("profiles/", "scenes/")
+_S3_KEY_PREFIXES = ("profiles/", "scenes/", "stories/")
 
 
 def resolve_image_url(client: Any, key: str | None) -> str | None:
