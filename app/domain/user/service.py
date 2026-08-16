@@ -54,8 +54,10 @@ class UserService:
         return [self._child_response(c) for c in children]
 
     async def _validate_image_key(self, key: str) -> None:
-        if not key.startswith("http") and not await check_object_exists(self.s3, key):
-            raise BadRequestError("프로필 이미지가 S3에 업로드되지 않았습니다.")
+        # http URL이거나 사용자 업로드 S3 key(profiles/)가 아니면 기본 프로필 식별자로 취급해 통과
+        if not key.startswith("http") and key.startswith("profiles/"):
+            if not await check_object_exists(self.s3, key):
+                raise BadRequestError("프로필 이미지가 S3에 업로드되지 않았습니다.")
 
     async def create_child(
         self, parent: Parent, data: ChildCreateRequest
