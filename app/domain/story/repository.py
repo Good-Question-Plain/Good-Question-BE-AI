@@ -4,7 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.story import Story
+from app.models.story import Story, StoryScene
 from app.models.story_session import StorySession
 
 PUBLISHED = "published"
@@ -60,4 +60,22 @@ class StoryRepository:
             .where(Story.id == story_id, Story.status == PUBLISHED)
         )
         return result.scalar_one_or_none()
+
+    async def get_popular_stories(self, limit: int) -> list[Story]:
+        session_count = func.count(StorySession.id).label("session_count")
+        result = await self.db.execute(
+            select(Story)
+            .outerjoin(StorySession, StorySession.story_id == Story.id)
+            .where(Story.status == PUBLISHED)
+            .group_by(Story.id)
+            .order_by(session_count.desc())
+            .limit(limit)
+        )
+        return list(result.scalars().all())
+
+    async def count_scenes(self, story_id: uuid.UUID) -> int:
+        result = await self.db.execute(
+            select(func.count(StoryScene.id)).where(StoryScene.story_id == story_id)
+        )
+        return result.scalar_one()
 
