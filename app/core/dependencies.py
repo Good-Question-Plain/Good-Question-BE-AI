@@ -25,9 +25,9 @@ def get_settings() -> Settings:
     return _settings
 
 
-def _extract_user_id(token: str) -> str:
+async def _extract_user_id(token: str) -> str:
     try:
-        payload = verify_supabase_token(token)
+        payload = await verify_supabase_token(token)
     except JWTError:
         raise UnauthorizedError("유효하지 않은 토큰입니다.")
     user_id: str | None = payload.get("sub")
@@ -39,14 +39,14 @@ def _extract_user_id(token: str) -> str:
 async def get_supabase_user_id(
     credentials: HTTPAuthorizationCredentials = Depends(_http_bearer),
 ) -> str:
-    return _extract_user_id(credentials.credentials)
+    return await _extract_user_id(credentials.credentials)
 
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(_http_bearer),
     db: AsyncSession = Depends(get_db),
 ) -> Parent:
-    user_id = _extract_user_id(credentials.credentials)
+    user_id = await _extract_user_id(credentials.credentials)
     result = await db.execute(select(Parent).where(Parent.id == uuid.UUID(user_id)))
     parent = result.scalar_one_or_none()
     if not parent:
@@ -59,7 +59,7 @@ async def get_current_user_with_email(
     db: AsyncSession = Depends(get_db),
 ) -> tuple[Parent, str]:
     try:
-        payload = verify_supabase_token(credentials.credentials)
+        payload = await verify_supabase_token(credentials.credentials)
     except JWTError:
         raise UnauthorizedError("유효하지 않은 토큰입니다.")
     user_id: str | None = payload.get("sub")

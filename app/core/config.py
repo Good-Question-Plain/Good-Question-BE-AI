@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     # Supabase
     SUPABASE_URL: str
-    SUPABASE_JWT_SECRET: str
+    SUPABASE_JWT_SECRET: str = ""  # 레거시 HS256 방식에서 사용, 현재는 JWKS로 대체됨
     SUPABASE_SERVICE_ROLE_KEY: str
 
     # AWS S3

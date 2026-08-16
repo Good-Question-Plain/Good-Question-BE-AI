@@ -19,7 +19,7 @@ async def test_get_current_user_with_email_success():
     mock_db = AsyncMock()
     mock_db.execute = AsyncMock(return_value=mock_result)
 
-    with patch("app.core.dependencies.verify_supabase_token") as mock_verify:
+    with patch("app.core.dependencies.verify_supabase_token", new_callable=AsyncMock) as mock_verify:
         mock_verify.return_value = {"sub": str(parent_id), "email": "test@example.com"}
         result_parent, result_email = await get_current_user_with_email(mock_credentials, mock_db)
 
@@ -34,7 +34,7 @@ async def test_get_current_user_with_email_no_email_raises_unauthorized():
     mock_credentials.credentials = "token_without_email"
     mock_db = AsyncMock()
 
-    with patch("app.core.dependencies.verify_supabase_token") as mock_verify:
+    with patch("app.core.dependencies.verify_supabase_token", new_callable=AsyncMock) as mock_verify:
         mock_verify.return_value = {"sub": str(uuid.uuid4())}  # email 없음
         with pytest.raises(UnauthorizedError):
             await get_current_user_with_email(mock_credentials, mock_db)
@@ -52,7 +52,7 @@ async def test_get_current_user_with_email_parent_not_found_raises_unauthorized(
     mock_db = AsyncMock()
     mock_db.execute = AsyncMock(return_value=mock_result)
 
-    with patch("app.core.dependencies.verify_supabase_token") as mock_verify:
+    with patch("app.core.dependencies.verify_supabase_token", new_callable=AsyncMock) as mock_verify:
         mock_verify.return_value = {"sub": str(parent_id), "email": "test@example.com"}
         with pytest.raises(UnauthorizedError):
             await get_current_user_with_email(mock_credentials, mock_db)
