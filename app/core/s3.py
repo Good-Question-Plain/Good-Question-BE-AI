@@ -31,3 +31,22 @@ def generate_presigned_upload_url(
         },
         ExpiresIn=expires,
     )
+
+
+def generate_presigned_get_url(
+    client: Any,
+    key: str,
+    expires: int = 3600,
+) -> str:
+    return client.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": settings.AWS_S3_BUCKET, "Key": key},
+        ExpiresIn=expires,
+    )
+
+
+def resolve_image_url(client: Any, key: str | None) -> str | None:
+    """object key → presigned GET URL 변환. None이거나 이미 URL이면 그대로 반환."""
+    if key is None or key.startswith("http"):
+        return key
+    return generate_presigned_get_url(client, key)

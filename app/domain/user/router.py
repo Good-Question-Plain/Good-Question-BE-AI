@@ -25,8 +25,8 @@ from app.domain.user.service import UserService
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-def _get_service(db: DBSession) -> UserService:
-    return UserService(db)
+def _get_service(db: DBSession, s3: S3ClientDep) -> UserService:
+    return UserService(db, s3)
 
 
 @router.get("/mypage", response_model=MypageResponse)
