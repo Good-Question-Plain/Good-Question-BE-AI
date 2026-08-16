@@ -18,7 +18,6 @@ async def list_stories(
     service: StoryService = Depends(_get_service),
 ):
     return await service.list_stories(topic)
-
 import uuid
 
 from fastapi import APIRouter, Depends, Query

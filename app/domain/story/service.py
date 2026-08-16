@@ -152,3 +152,4 @@ class StoryService:
         if story is None:
             raise NotFoundError("스토리를 찾을 수 없습니다.")
         return story
+

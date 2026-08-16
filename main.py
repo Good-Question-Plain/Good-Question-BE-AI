@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.core.exceptions import AppError, app_error_handler
 from app.core.security import _get_jwks
 from app.domain.auth.router import router as auth_router
+from app.domain.story.router import router as story_router
 from app.domain.main.router import router as main_router
 from app.domain.story.router import router as story_router
 from app.domain.main.router import router as main_router
@@ -17,7 +18,6 @@ from app.domain.progress.router import router as progress_router
 from app.domain.story.router import router as story_router
 from app.domain.user.router import router as user_router
 from app.domain.vocabulary.router import reports_router, vocabulary_router
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -38,5 +38,6 @@ app.add_middleware(
 app.add_exception_handler(AppError, app_error_handler)
 
 app.include_router(auth_router)
+app.include_router(story_router)
 app.include_router(main_router)
 app.include_router(story_router)

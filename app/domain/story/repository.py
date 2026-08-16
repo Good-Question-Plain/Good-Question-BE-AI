@@ -65,7 +65,6 @@ import uuid
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.models.story import Story, StoryScene
 from app.models.story_session import StorySession
 
