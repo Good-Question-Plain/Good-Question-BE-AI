@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -9,6 +10,7 @@ from app.models.child import Child
 from app.models.message import Message, UtteranceAnalysis
 from app.models.story import Story, StoryScene
 from app.models.story_session import StorySession
+from app.models.vocabulary import ChildVocabulary, SceneVocabulary
 
 PUBLISHED = "published"
 IN_PROGRESS = "in_progress"
@@ -140,3 +142,67 @@ class ProgressRepository:
                     )
                 )
         await self.db.commit()
+
+    async def list_scene_vocabularies(self, scene_id: uuid.UUID) -> list[SceneVocabulary]:
+        result = await self.db.execute(
+            select(SceneVocabulary)
+            .where(SceneVocabulary.scene_id == scene_id)
+            .order_by(SceneVocabulary.word)
+        )
+        return list(result.scalars())
+
+    async def get_scene_vocabulary(
+        self, scene_vocabulary_id: uuid.UUID
+    ) -> SceneVocabulary | None:
+        result = await self.db.execute(
+            select(SceneVocabulary).where(SceneVocabulary.id == scene_vocabulary_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def selected_vocabulary_ids(
+        self, session_id: uuid.UUID, scene_id: uuid.UUID
+    ) -> set[uuid.UUID]:
+        result = await self.db.execute(
+            select(ChildVocabulary.scene_vocabulary_id)
+            .join(SceneVocabulary)
+            .where(
+                ChildVocabulary.session_id == session_id,
+                SceneVocabulary.scene_id == scene_id,
+            )
+        )
+        return set(result.scalars().all())
+
+    async def select_vocabulary(
+        self,
+        session_id: uuid.UUID,
+        child_id: uuid.UUID,
+        scene_vocabulary_id: uuid.UUID,
+    ) -> None:
+        self.db.add(
+            ChildVocabulary(
+                session_id=session_id,
+                child_id=child_id,
+                scene_vocabulary_id=scene_vocabulary_id,
+                kind="curious",
+            )
+        )
+        try:
+            await self.db.commit()
+        except IntegrityError:
+            await self.db.rollback()
+
+    async def unselect_vocabulary(
+        self, session_id: uuid.UUID, scene_vocabulary_id: uuid.UUID
+    ) -> bool:
+        result = await self.db.execute(
+            select(ChildVocabulary).where(
+                ChildVocabulary.session_id == session_id,
+                ChildVocabulary.scene_vocabulary_id == scene_vocabulary_id,
+            )
+        )
+        row = result.scalar_one_or_none()
+        if row is None:
+            return False
+        await self.db.delete(row)
+        await self.db.commit()
+        return True

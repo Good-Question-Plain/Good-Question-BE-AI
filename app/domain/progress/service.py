@@ -1,22 +1,28 @@
+import asyncio
 import json
 import uuid
 from datetime import datetime, timezone
 from typing import Any
 
+from fastapi import BackgroundTasks
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import BadRequestError, ConflictError, ForbiddenError, NotFoundError
-from app.domain.progress.ai import ChatHistory
+from app.domain.progress.ai import get_story_ai, to_openai_messages
 from app.domain.progress.repository import COMPLETED, ProgressRepository
 from app.domain.progress.schema import (
     ActiveProgressResponse,
     CompleteResponse,
+    MissionPrompt,
     ProgressStatusResponse,
+    SceneVocabularyItem,
+    SceneVocabularyListResponse,
     SpeakResponse,
     StartResponse,
     StepResponse,
 )
+from app.domain.story.character import scene_character_name
 from app.models.child import Child
 from app.models.parent import Parent
 from app.models.story import Story, StoryScene
@@ -47,10 +53,37 @@ def _conv_key(session_id: uuid.UUID, scene_id: uuid.UUID) -> str:
     return f"conv:{session_id}:{scene_id}"
 
 
-def _chat_history(turns: list[dict]) -> ChatHistory:
-    return {
-        "turns": [{"speaker": t["speaker"], "text": t["text"]} for t in turns]
-    }
+def _chat_history(turns: list[dict]) -> list[dict[str, str]]:
+    """Redis turns 를 [{role: AI|user, content}] 리스트로 바꾼다."""
+    history: list[dict[str, str]] = []
+    for item in turns:
+        if "role" in item:
+            role = "user" if item.get("role") in ("user", "child") else "AI"
+            content = (item.get("content") or item.get("text") or "").strip()
+        else:
+            role = "user" if item.get("speaker") == "child" else "AI"
+            content = (item.get("text") or item.get("content") or "").strip()
+        if content:
+            history.append({"role": role, "content": content})
+    return history
+
+
+def _history_to_turns(history: list[dict]) -> list[dict]:
+    return [
+        {
+            "speaker": "child" if item.get("role") == "user" else "character",
+            "text": item.get("content") or "",
+            "validity": item.get("validity", "valid"),
+        }
+        for item in history
+        if (item.get("content") or "").strip()
+    ]
+
+
+def _conv_history(conv: dict[str, Any]) -> list[dict[str, str]]:
+    if conv.get("chat_history"):
+        return _chat_history(conv["chat_history"])
+    return _chat_history(conv.get("turns") or [])
 
 
 class ProgressService:
@@ -165,9 +198,10 @@ class ProgressService:
         story_id: uuid.UUID,
         step_index: int,
         audio: bytes,
+        background_tasks: BackgroundTasks,
     ) -> SpeakResponse:
         child = await self._require_child(parent, child_id)
-        await self._require_story(story_id)
+        story = await self._require_story(story_id)
         session = await self._require_in_progress(child_id, story_id)
         scene = session.current_scene
         if scene is None or scene.scene_order != step_index:
@@ -179,25 +213,110 @@ class ProgressService:
         if not audio:
             raise BadRequestError("오디오 파일이 비어 있습니다.")
 
-        await self._load_or_init_conv(session, scene, child.name)
+        conv = await self._load_or_init_conv(session, scene, child.name)
         max_turns = scene.max_turns or DEFAULT_MAX_TURNS
+        ai = get_story_ai()
+        history = _conv_history(conv)
 
-        # AI 이후 개발
-        # do_stt(audio, story.summary) → text
-        # check_correct_chat(...) → 실패 시 되묻기, 연속 3회면 강제 진행
-        # Redis에 child 저장, turn += 1
-        # check_mission_condition(...) → 미션 노출
-        # max_turns 또는 check_end_condition(...) → closing 저장 후 messages 플러시
-        # 아니면 make_chat(...) → 캐릭터 대사
-        pass
+        child_text = await asyncio.to_thread(ai.do_stt, audio, story.summary)
+        accepted = await asyncio.to_thread(
+            ai.check_correct_chat,
+            story.summary,
+            scene.scene_description or "",
+            history,
+            session.current_child_turn_count,
+            child_text,
+        )
+        if not accepted:
+            conv["invalid_streak"] = int(conv.get("invalid_streak") or 0) + 1
+            conv["chat_history"] = history
+            await self._save_conv(session.id, scene.id, conv)
+            if conv["invalid_streak"] < MAX_INVALID_RETRIES:
+                return SpeakResponse(
+                    accepted=False,
+                    child_text=child_text,
+                    character_line="잘 못 들었어. 한 번만 더 말해 줄래?",
+                    turn=session.current_child_turn_count,
+                    max_turns=max_turns,
+                    mission=None,
+                    scene_ended=False,
+                    end_reason=None,
+                )
 
+        conv["invalid_streak"] = 0
+        history.append({"role": "user", "content": child_text})
+        conv["chat_history"] = history
+        session.current_child_turn_count += 1
+        turn = session.current_child_turn_count
+
+        mission = None
+        if scene.mission_condition and not conv.get("mission_shown"):
+            show_mission = await asyncio.to_thread(
+                ai.check_mission_condition, history, scene.mission_condition
+            )
+            if show_mission:
+                conv["mission_shown"] = True
+                mission = MissionPrompt(
+                    condition=scene.mission_condition,
+                    examples=list(scene.mission_examples or []),
+                )
+
+        reached_max = turn >= max_turns
+        goal_met = await asyncio.to_thread(
+            ai.check_end_condition,
+            scene.scene_goal or "",
+            history,
+            turn,
+        )
+        if reached_max or goal_met:
+            end_reason = "max_turns" if reached_max else "goal_met"
+            closing = _fill_name(scene.character_closing, child.name)
+            if closing:
+                history.append({"role": "AI", "content": closing})
+                conv["chat_history"] = history
+            session.scene_end_reason = end_reason
+            session.scene_goal_met = goal_met
+            story_just_completed = scene.scene_order == len(story.scenes)
+            if story_just_completed:
+                session.status = COMPLETED
+                session.completed_at = datetime.now(timezone.utc)
+            await self._flush_conv(session, scene, conv)
+            await self.repo.save(session)
+            if story_just_completed:
+                await self._enqueue_report(session, background_tasks)
+            return SpeakResponse(
+                accepted=True,
+                child_text=child_text,
+                character_line=closing,
+                turn=turn,
+                max_turns=max_turns,
+                mission=mission,
+                scene_ended=True,
+                end_reason=end_reason,  # type: ignore[arg-type]
+            )
+
+        character_line = await asyncio.to_thread(
+            ai.make_chat,
+            scene_character_name(scene) or "",
+            _fill_name(scene.character_opening, child.name) or "",
+            _fill_name(scene.character_closing, child.name) or "",
+            to_openai_messages(history),
+            story.summary,
+            scene.scene_description or "",
+            scene.scene_goal or "",
+            turn,
+        )
+        history.append({"role": "AI", "content": character_line})
+        conv["chat_history"] = history
+        await self._save_conv(session.id, scene.id, conv)
+        await self.repo.save(session)
         return SpeakResponse(
             accepted=True,
-            child_text="",
-            character_line=None,
-            turn=session.current_child_turn_count,
+            child_text=child_text,
+            character_line=character_line,
+            turn=turn,
             max_turns=max_turns,
-            mission=None,
+            mission=mission,
             scene_ended=False,
             end_reason=None,
         )
@@ -208,6 +327,7 @@ class ProgressService:
         child_id: uuid.UUID,
         story_id: uuid.UUID,
         step_index: int,
+        background_tasks: BackgroundTasks,
     ) -> CompleteResponse:
         await self._require_child(parent, child_id)
         story = await self._require_story(story_id)
@@ -230,15 +350,58 @@ class ProgressService:
 
         session.scene_goal_met = True
         session.scene_end_reason = "narration_done"
-        if scene.scene_order == scene_count:
+        story_just_completed = scene.scene_order == scene_count
+        if story_just_completed:
             session.status = COMPLETED
             session.completed_at = datetime.now(timezone.utc)
         await self.repo.save(session)
+        if story_just_completed:
+            await self._enqueue_report(session, background_tasks)
         return CompleteResponse(
             current_step=step_index,
             scene_count=scene_count,
             status=session.status,  # type: ignore[arg-type]
             completed=session.status == COMPLETED,
+        )
+
+    async def select_scene_vocabulary(
+        self,
+        parent: Parent,
+        child_id: uuid.UUID,
+        story_id: uuid.UUID,
+        step_index: int,
+        scene_vocabulary_id: uuid.UUID,
+    ) -> SceneVocabularyListResponse:
+        session, scene = await self._require_current_step(
+            parent, child_id, story_id, step_index
+        )
+        word = await self.repo.get_scene_vocabulary(scene_vocabulary_id)
+        if word is None or word.scene_id != scene.id:
+            raise NotFoundError("이 장면에 없는 단어입니다.")
+        await self.repo.select_vocabulary(session.id, child_id, word.id)
+        return SceneVocabularyListResponse(
+            items=await self._scene_vocabulary_items(session.id, scene.id)
+        )
+
+    async def unselect_scene_vocabulary(
+        self,
+        parent: Parent,
+        child_id: uuid.UUID,
+        story_id: uuid.UUID,
+        step_index: int,
+        scene_vocabulary_id: uuid.UUID,
+    ) -> SceneVocabularyListResponse:
+        session, scene = await self._require_current_step(
+            parent, child_id, story_id, step_index
+        )
+        word = await self.repo.get_scene_vocabulary(scene_vocabulary_id)
+        if word is None or word.scene_id != scene.id:
+            raise NotFoundError("이 장면에 없는 단어입니다.")
+        removed = await self.repo.unselect_vocabulary(session.id, scene_vocabulary_id)
+        if not removed:
+            raise NotFoundError("선택하지 않은 단어입니다.")
+        return SceneVocabularyListResponse(
+            items=await self._scene_vocabulary_items(session.id, scene.id)
         )
 
     async def _enter_current(
@@ -268,12 +431,13 @@ class ProgressService:
             scene_id=scene.id,
             scene_description=_fill_name(scene.scene_description, child_name),
             image_url=scene.image_url,
-            character_name=scene.character_name,
+            character_name=scene_character_name(scene),
             character_opening=_fill_name(scene.character_opening, child_name),
             character_closing=None,
             max_turns=scene.max_turns if scene.scene_type == DIALOGUE else None,
             turn=turn,
             mission=None,
+            vocabularies=await self._scene_vocabulary_items(session.id, scene.id),
         )
 
     async def _load_or_init_conv(
@@ -281,11 +445,13 @@ class ProgressService:
     ) -> dict[str, Any]:
         raw = await self.redis.get(_conv_key(session.id, scene.id))
         if raw is not None:
-            return json.loads(raw)
+            conv = json.loads(raw)
+            conv["chat_history"] = _conv_history(conv)
+            return conv
 
         opening = _fill_name(scene.character_opening, child_name)
         conv: dict[str, Any] = {
-            "turns": (
+            "chat_history": _chat_history(
                 [{"speaker": "character", "text": opening}] if opening else []
             ),
             "invalid_streak": 0,
@@ -307,7 +473,9 @@ class ProgressService:
     async def _flush_conv(
         self, session: StorySession, scene: StoryScene, conv: dict[str, Any]
     ) -> None:
-        await self.repo.flush_turns(session.id, scene.id, conv["turns"])
+        await self.repo.flush_turns(
+            session.id, scene.id, _history_to_turns(_conv_history(conv))
+        )
         await self.redis.delete(_conv_key(session.id, scene.id))
 
     async def _has_open_dialogue(self, session: StorySession) -> bool:
@@ -331,11 +499,55 @@ class ProgressService:
         session.turns_without_new_element = 0
         session.consecutive_low_information_turns = 0
 
+    async def _enqueue_report(
+        self, session: StorySession, background_tasks: BackgroundTasks
+    ) -> None:
+        try:
+            from app.domain.vocabulary.service import ReportService
+        except ImportError:
+            return
+        enqueue = getattr(ReportService, "enqueue_for_completed_session", None)
+        if enqueue is None:
+            return
+        await ReportService(self.repo.db).enqueue_for_completed_session(
+            session, background_tasks
+        )
+
     async def _require_child(self, parent: Parent, child_id: uuid.UUID) -> Child:
         child = await self.repo.get_child(child_id, parent.id)
         if child is None:
             raise ForbiddenError("해당 자녀 프로필에 접근할 수 없습니다.")
         return child
+
+    async def _require_current_step(
+        self,
+        parent: Parent,
+        child_id: uuid.UUID,
+        story_id: uuid.UUID,
+        step_index: int,
+    ) -> tuple[StorySession, StoryScene]:
+        await self._require_child(parent, child_id)
+        session = await self._require_in_progress(child_id, story_id)
+        scene = session.current_scene
+        if scene is None or scene.scene_order != step_index:
+            raise ConflictError("현재 단계와 다른 장면입니다.")
+        return session, scene
+
+    async def _scene_vocabulary_items(
+        self, session_id: uuid.UUID, scene_id: uuid.UUID
+    ) -> list[SceneVocabularyItem]:
+        words = await self.repo.list_scene_vocabularies(scene_id)
+        selected = await self.repo.selected_vocabulary_ids(session_id, scene_id)
+        return [
+            SceneVocabularyItem(
+                id=word.id,
+                word=word.word,
+                definition=word.definition,
+                example_sentence=word.example_sentence,
+                selected=word.id in selected,
+            )
+            for word in words
+        ]
 
     async def _require_story(self, story_id: uuid.UUID) -> Story:
         story = await self.repo.get_published_story(story_id)

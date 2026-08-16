@@ -86,7 +86,7 @@
 
 ## Phase 5 — Progress 도메인 (스토리 진행 + 음성 인터랙션)
 
-> `app/domain/progress/` 신규 생성. STT·LLM은 Protocol + 스텁.  
+> `app/domain/progress/` 신규 생성. STT·LLM 연동 포함.  
 > 설계 문서: `docs/designs/progress-domain 2026-08-14 11:20.md`
 
 | 작업 | 상태 |
@@ -95,10 +95,14 @@
 | `GET /progress/active` — 진행 중인 스토리 1개 (메인 화면) | ✅ |
 | `GET /progress/{story_id}` — 현재 진행 상태 조회 | ✅ |
 | `POST /progress/{story_id}/steps/{step_index}` — 단계 진입 + 콘텐츠 | ✅ |
-| `POST /progress/{story_id}/steps/{step_index}/speak` — 아이 발화 (STT → 검증 → 대사) | ✅ |
+| `POST /progress/{story_id}/steps/{step_index}/speak` — 아이 발화 (STT → 검증/미션/종료 심판 → make_chat) | ✅ |
 | `POST /progress/{story_id}/steps/{step_index}/complete` — 내레이션 단계 완료 | ✅ |
 | Redis 대화 컨텍스트 `conv:{session_id}:{scene_id}` | ✅ |
 | `alembic/008` — scene_type, 미션 컬럼, 대화 필드 nullable | ✅ |
+| 씬마다 궁금한 단어 선택 — `docs/designs/scene-curious-vocabulary 2026-08-15 21:30.md` | ✅ |
+| `alembic/010` — 캐릭터 표시명/키 분리 | ✅ |
+| `alembic/011` — child_vocabularies.session_id, kind | ✅ |
+| 마지막 장면 완료 시 학습 리포트 enqueue (리포트 도메인이 있을 때만) | ✅ |
 
 > 경로가 IMPLEMENTATION_ORDER 초안과 다른 이유
 > - 프론트의 `GET /stories/{id}/steps/{index}` 는 세션 위치를 못 바꿔서
@@ -106,12 +110,11 @@
 > - `PATCH .../complete` 는 본문 없는 상태 전이라 POST 로 두었다.
 >
 > 남은 의존성
-> - STT / 발화 검증 / 미션 등장 / 종료 판정 / 대사 생성은 `pass` + `AI 이후 개발` 로 비워 두었다.
->   `app/domain/progress/ai.py` Protocol 만 있고, `speak` 는 세션 가드만 수행한다.
-> - 대화 씬은 AI 가 붙기 전에는 `scene_ended` 가 나지 않아 다음 스텝으로 못 넘어간다.
+> - STT는 `GROQ_API_KEY`(Whisper), 정규화·심판·대사는 `OPENAI_API_KEY` (`OPENAI_MODEL=gpt-5.6-luna`).
 > - 대화 씬을 끝나기 전에 앱이 죽으면 그 씬 Redis 는 유실되고, 이어하기 시 opening부터 다시 시작한다.
 > - `required_elements` 는 저장만 하고 런타임에 쓰지 않는다.
-> - 콘텐츠 시딩은 이번 범위 밖. `difficulty` 는 `쉬움/보통/어려움`, 내레이션 씬은 `scene_type=narration`.
+> - 콘텐츠 시딩 JSON: `seeds/s_banggui_daughter_in_law_001.json`. 로더는 별도.
+> - 학습 리포트 자동 생성은 `ReportService.enqueue_for_completed_session` 이 있는 브랜치와 합쳐져야 동작한다.
 
 ---
 
