@@ -1,7 +1,7 @@
 """move character slugs to character_key, keep korean name in character_name
 
-Revision ID: 010
-Revises: 009
+Revision ID: 012
+Revises: 011
 Create Date: 2026-08-15
 """
 
@@ -10,8 +10,8 @@ import re
 import sqlalchemy as sa
 from alembic import op
 
-revision = "010"
-down_revision = "009"
+revision = "012"
+down_revision = "011"
 branch_labels = None
 depends_on = None
 

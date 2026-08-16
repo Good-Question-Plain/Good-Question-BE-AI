@@ -41,6 +41,7 @@ class SceneItem(BaseModel):
 
     id: uuid.UUID
     scene_order: int
+    scene_title: str
     scene_type: Literal["narration", "dialogue"]
     scene_description: str | None = None
     character_name: str | None = None

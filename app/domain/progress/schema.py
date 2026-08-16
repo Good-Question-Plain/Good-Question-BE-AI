@@ -34,6 +34,7 @@ class StepResponse(BaseModel):
     scene_count: int
     kind: SceneKind
     scene_id: uuid.UUID
+    scene_title: str | None = None
     scene_description: str | None = None
     image_url: str | None = None
     character_name: str | None = None  # 한글 표시명. ch_ 슬러그 아님.
