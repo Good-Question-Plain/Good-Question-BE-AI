@@ -32,6 +32,9 @@
 ## Phase 2 — DB 스키마 전체 확정
 
 > Phase 3~6 모두의 선행 조건. 반드시 먼저 완료.
+> ⚠️ 아래 표는 TRD 5장 기준의 초기 계획이다. 실제로는 `alembic/002` 에서 다른 이름·구조로 반영되었다
+> (`parents`, `children`, `child_consents`, `stories`, `story_scenes`, `story_sessions`, `messages`,
+> `utterance_analyses`, `post_activity_results`). 어휘 테이블은 Phase 6 의 리포트 테이블로 대체됨.
 
 | 작업 | 상태 |
 |------|------|
@@ -51,48 +54,99 @@
 
 | 작업 | 상태 |
 |------|------|
-| `GET /users/me` — 학부모 계정 정보 조회 | ⬜ |
-| `GET /users/me/children` — 자녀 프로필 목록 | ⬜ |
-| `POST /users/me/children` — 자녀 프로필 추가 | ⬜ |
-| `PATCH /users/me/children/{child_id}` — 자녀 프로필 수정 | ⬜ |
-| `DELETE /users/me/children/{child_id}` — 자녀 프로필 삭제 | ⬜ |
+| `GET /users/me` — 학부모 계정 정보 조회 | ✅ |
+| `GET /users/me/children` — 자녀 프로필 목록 | ✅ |
+| `POST /users/me/children` — 자녀 프로필 추가 | ✅ |
+| `PATCH /users/me/children/{child_id}` — 자녀 프로필 수정 | ✅ |
+| `DELETE /users/me/children/{child_id}` — 자녀 프로필 삭제 | ✅ |
 
 ---
 
 ## Phase 4 — Story 도메인 (스토리 탐색)
 
-> `app/domain/story/` 신규 생성. Redis 캐시 활용. AI 연동 없음.
+> `app/domain/story/` 신규 생성. Redis 캐시 활용. AI 연동 없음.  
+> 설계 문서: `docs/designs/story-domain 2026-08-13 21:55.md`
 
 | 작업 | 상태 |
 |------|------|
-| `GET /stories` — 스토리 목록 (카테고리 필터, 페이지네이션) | ⬜ |
-| `GET /stories/recommended` — 추천 스토리 3개 (Redis 10분 캐시) | ⬜ |
-| `GET /stories/{story_id}` — 스토리 상세 (Redis 1시간 캐시) | ⬜ |
-| `GET /stories/{story_id}/scenes` — 씬 목록 조회 | ⬜ |
+| `GET /stories` — 스토리 목록 (카테고리 필터, 페이지네이션) | ✅ |
+| `GET /stories/recommended` — 추천 스토리 3개 (Redis 10분 캐시) | ✅ |
+| `GET /stories/{story_id}` — 스토리 상세 (Redis 1시간 캐시) | ✅ |
+| `GET /stories/{story_id}/scenes` — 씬 목록 조회 | ✅ |
+
+> 이번에 확정한 값 규약
+> - `stories.status`: `draft` / `published` — 조회 API는 `published` 만 노출
+> - `stories.difficulty`: `쉬움` / `보통` / `어려움` — Phase 5에서 콘텐츠 스펙에 맞춤
+> - 카테고리는 `stories.topics` 배열과 매칭 (`category = ANY(topics)`)
+>
+> 남은 의존성
+> - 추천 캐시 `recommended:child:{child_id}` 는 Phase 5 `POST /progress/.../start` 에서 삭제한다.
+> - 씬 목록 API는 `scene_goal` / `required_elements` / `conflict` / `preferred_turns` / `max_turns` 를
+>   제외한다. 진행 API 는 서버 내부에서 직접 읽어 쓴다.
+> - 스토리 콘텐츠 등록·수정(어드민) API 가 없어 캐시 무효화 로직은 두지 않았다.
 
 ---
 
 ## Phase 5 — Progress 도메인 (스토리 진행 + 음성 인터랙션)
 
-> `app/domain/progress/` 신규 생성. STT 및 LLM 연동 포함.
+> `app/domain/progress/` 신규 생성. STT·LLM 연동 포함.  
+> 설계 문서: `docs/designs/progress-domain 2026-08-14 11:20.md`
 
 | 작업 | 상태 |
 |------|------|
-| `POST /progress/{story_id}/start` — 스토리 시작 (story_progress 생성) | ⬜ |
-| `GET /progress/active` — 진행 중인 스토리 1개 조회 (메인 화면) | ⬜ |
-| `GET /progress/{story_id}` — 현재 진행 상태 조회 | ⬜ |
-| `POST /progress/{story_id}/scenes/{scene_id}/speak` — 아이 발화 제출 (STT → AI 분석 → 후속질문 or 다음 씬) | ⬜ |
-| `PATCH /progress/{story_id}/scenes/{scene_id}/complete` — 씬 완료 처리 (conversation_turn DB 저장) | ⬜ |
-| Redis 대화 컨텍스트 관리 (`conv:{child_id}:{scene_id}`) | ⬜ |
+| `POST /progress/{story_id}/start` — 세션 시작 또는 이어하기 | ✅ |
+| `GET /progress/active` — 진행 중인 스토리 1개 (메인 화면) | ✅ |
+| `GET /progress/{story_id}` — 현재 진행 상태 조회 | ✅ |
+| `POST /progress/{story_id}/steps/{step_index}` — 단계 진입 + 콘텐츠 | ✅ |
+| `POST /progress/{story_id}/steps/{step_index}/speak` — 아이 발화 (STT → 검증/미션/종료 심판 → make_chat) | ✅ |
+| `POST /progress/{story_id}/steps/{step_index}/complete` — 내레이션 단계 완료 | ✅ |
+| Redis 대화 컨텍스트 `conv:{session_id}:{scene_id}` | ✅ |
+| `alembic/008` — scene_type, 미션 컬럼, 대화 필드 nullable | ✅ |
+| 씬마다 궁금한 단어 선택 — `docs/designs/scene-curious-vocabulary 2026-08-15 21:30.md` | ✅ |
+| `alembic/010` — 캐릭터 표시명/키 분리 | ✅ |
+| `alembic/011` — child_vocabularies.session_id, kind | ✅ |
+| 마지막 장면 완료 시 학습 리포트 enqueue (리포트 도메인이 있을 때만) | ✅ |
+
+> 경로가 IMPLEMENTATION_ORDER 초안과 다른 이유
+> - 프론트의 `GET /stories/{id}/steps/{index}` 는 세션 위치를 못 바꿔서
+>   `POST /progress/{story_id}/steps/{step_index}` 로 두었다.
+> - `PATCH .../complete` 는 본문 없는 상태 전이라 POST 로 두었다.
+>
+> 남은 의존성
+> - STT는 `GROQ_API_KEY`(Whisper), 정규화·심판·대사는 `OPENAI_API_KEY` (`OPENAI_MODEL=gpt-5.6-luna`).
+> - 대화 씬을 끝나기 전에 앱이 죽으면 그 씬 Redis 는 유실되고, 이어하기 시 opening부터 다시 시작한다.
+> - `required_elements` 는 저장만 하고 런타임에 쓰지 않는다.
+> - 콘텐츠 시딩 JSON: `seeds/s_banggui_daughter_in_law_001.json`. 로더는 별도.
+> - 학습 리포트 자동 생성은 `ReportService.enqueue_for_completed_session` 이 있는 브랜치와 합쳐져야 동작한다.
 
 ---
 
 ## Phase 6 — Vocabulary 도메인 (학습 리포트)
 
-> `app/domain/vocabulary/` 신규 생성. LLM 기반 리포트 생성 포함.
+> `app/domain/vocabulary/`. 설계 문서: `docs/designs/vocabulary-report 2026-08-12 23:05.md`
+> 리포트는 `story_sessions` 단위로 생성되므로 `child_id` 쿼리로 아이를 특정하고, 서비스가 최근 완료 세션을 찾는다.
 
 | 작업 | 상태 |
 |------|------|
-| `POST /reports/{story_id}/generate` — 스토리 완료 후 LLM 리포트 생성 트리거 | ⬜ |
-| `GET /reports/{story_id}` — 학습 리포트 조회 (어휘/표현/논리 전체) | ⬜ |
-| `GET /vocabulary` — 아이가 사용·궁금해한 어휘 목록 조회 | ⬜ |
+| 기존 단어 저장 API (`GET /vocabulary/saved`, `GET /{id}`, save/unsave) | ✅ |
+| `app/models/report.py` (learning_report + report_vocabulary) | ✅ |
+| `alembic/012` — learning_reports, report_vocabularies 마이그레이션 | ✅ |
+| `POST /reports/{story_id}/generate?child_id=` — 리포트 생성 트리거 (BackgroundTasks, 202) | ✅ |
+| `GET /reports/{story_id}?child_id=` — 학습 리포트 조회 (어휘/표현/논리 전체) | ✅ |
+| `GET /vocabulary?child_id=&kind=&limit=&offset=` — 아이가 사용·궁금해한 어휘 목록 조회 | ✅ |
+| `analyzer.py` — 리포트 분석기 인터페이스 + 스텁 구현 | ✅ |
+| 대표 발화 선정 (규칙 점수 + 동점 처리) — `docs/designs/representative-utterance 2026-08-12 23:25.md` | ✅ |
+| `alembic/013` — learning_reports 대표 발화 컬럼 추가 | ✅ |
+| 실제 LLM(Anthropic) 분석기 — `docs/designs/llm-report-analyzer 2026-08-13 00:30.md` | ✅ |
+| OpenAI `make_report` 분석기 — `docs/designs/story-ai 2026-08-15 13:20.md` | ✅ |
+| 리포트 화면 대응 (집에서 이어가볼까요 / 이전·다음 리포트 / 헤더 정보) — `docs/designs/report-screen-coverage 2026-08-13 12:50.md` | ✅ |
+| `alembic/014` — story_topic_questions, daily_life_questions 컬럼 추가 | ✅ |
+| `alembic/015` — child_vocabularies.session_id, kind | ✅ |
+| 완료된 리포트 재생성 + `enqueue_for_completed_session` (이야기 완료 훅) | ✅ |
+| 궁금한 단어(`kind=curious`)를 세션 선택 결과와 병합 | ✅ |
+
+> 남은 의존성
+> - 인증은 `parents.id` (Supabase JWT `sub`) 기준이다.
+> - `OPENAI_API_KEY` 가 있으면 `make_report` 분석기를 쓴다. 없고 `ANTHROPIC_API_KEY` 만 있으면 기존 Anthropic 분석기, 둘 다 없으면 스텁.
+> - `POST /reports/{story_id}/generate` 는 같은 세션의 완료 리포트가 있어도 이번 회차로 다시 만든다.
+> - 내레이션 마지막 장면 `complete` 에서 리포트를 자동 생성한다. 대화 씬 종료 훅은 스토리 AI speak 머지 후 붙는다.

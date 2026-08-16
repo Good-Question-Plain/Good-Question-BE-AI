@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     # Supabase
     SUPABASE_URL: str
-    SUPABASE_JWT_SECRET: str
+    SUPABASE_JWT_SECRET: str = ""  # 레거시 HS256 방식에서 사용, 현재는 JWKS로 대체됨
     SUPABASE_SERVICE_ROLE_KEY: str
 
     # AWS S3
@@ -20,6 +20,21 @@ class Settings(BaseSettings):
     AWS_SECRET_ACCESS_KEY: str = ""
     AWS_S3_BUCKET: str = ""
     AWS_REGION: str = "ap-northeast-2"
+
+    # Anthropic (학습 리포트 분석, OpenAI 키가 없을 때 폴백)
+    ANTHROPIC_API_KEY: str = ""
+    ANTHROPIC_MODEL: str = "claude-sonnet-4-6"
+    ANTHROPIC_MAX_TOKENS: int = 2000
+    ANTHROPIC_TIMEOUT_SECONDS: float = 60.0
+
+    # OpenAI (STT 정규화, 장면 심판, 캐릭터 대사, 학습 리포트)
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-5.6-luna"
+    OPENAI_TIMEOUT_SECONDS: float = 60.0
+
+    # Groq (Whisper STT)
+    GROQ_API_KEY: str = ""
+    GROQ_STT_MODEL: str = "whisper-large-v3"
 
     # CORS
     CORS_ORIGINS: str = "http://localhost:3000"

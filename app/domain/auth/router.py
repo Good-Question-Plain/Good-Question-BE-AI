@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 
-from app.core.dependencies import CurrentUser, DBSession, SupabaseUserID
-from app.domain.auth.schema import MessageResponse, SyncProfileRequest
+from app.core.dependencies import CurrentUser, CurrentUserWithEmail, DBSession, SupabaseUserID
+from app.domain.auth.schema import MessageResponse, SyncProfileRequest, VerifyPasswordRequest
 from app.domain.auth.service import AuthService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -19,6 +19,17 @@ async def sync_profile(
 ):
     await service.sync_profile(user_id, body.name)
     return MessageResponse(message="프로필이 등록되었습니다.")
+
+
+@router.post("/verify-password", response_model=MessageResponse)
+async def verify_password(
+    body: VerifyPasswordRequest,
+    user_with_email: CurrentUserWithEmail,
+    service: AuthService = Depends(_get_service),
+):
+    _, email = user_with_email
+    await service.verify_password(email, body.password)
+    return MessageResponse(message="인증되었습니다.")
 
 
 @router.delete("/me", response_model=MessageResponse)
