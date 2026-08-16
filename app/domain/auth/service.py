@@ -6,9 +6,14 @@ from app.core.exceptions import BadRequestError, ConflictError, UnauthorizedErro
 from app.domain.auth.repository import ParentRepository
 from app.models.parent import Parent
 
-_SUPABASE_HEADERS = {
+_SUPABASE_ADMIN_HEADERS = {
     "apikey": settings.SUPABASE_SERVICE_ROLE_KEY,
     "Authorization": f"Bearer {settings.SUPABASE_SERVICE_ROLE_KEY}",
+    "Content-Type": "application/json",
+}
+
+_SUPABASE_CLIENT_HEADERS = {
+    "apikey": settings.SUPABASE_SERVICE_ROLE_KEY,
     "Content-Type": "application/json",
 }
 
@@ -23,11 +28,11 @@ class AuthService:
         await self.repo.create(parent_id=user_id, name=name)
 
     async def verify_password(self, email: str, password: str) -> None:
-        url = f"{settings.SUPABASE_URL}/auth/v1/token?grant_type=password"
+        url = f"{settings.supabase_base_url}/auth/v1/token?grant_type=password"
         async with httpx.AsyncClient() as client:
             resp = await client.post(
                 url,
-                headers=_SUPABASE_HEADERS,
+                headers=_SUPABASE_CLIENT_HEADERS,
                 json={"email": email, "password": password},
             )
         if resp.status_code != 200:
@@ -44,17 +49,17 @@ class AuthService:
         await self.repo.delete(parent)
 
     async def _update_supabase_password(self, user_id: str, new_password: str) -> None:
-        url = f"{settings.SUPABASE_URL}/auth/v1/admin/users/{user_id}"
+        url = f"{settings.supabase_base_url}/auth/v1/admin/users/{user_id}"
         async with httpx.AsyncClient() as client:
             resp = await client.put(
-                url, headers=_SUPABASE_HEADERS, json={"password": new_password}
+                url, headers=_SUPABASE_ADMIN_HEADERS, json={"password": new_password}
             )
         if resp.status_code not in (200, 201):
             raise BadRequestError("비밀번호 변경에 실패했습니다.")
 
     async def _delete_supabase_user(self, user_id: str) -> None:
-        url = f"{settings.SUPABASE_URL}/auth/v1/admin/users/{user_id}"
+        url = f"{settings.supabase_base_url}/auth/v1/admin/users/{user_id}"
         async with httpx.AsyncClient() as client:
-            resp = await client.delete(url, headers=_SUPABASE_HEADERS)
+            resp = await client.delete(url, headers=_SUPABASE_ADMIN_HEADERS)
             if resp.status_code not in (200, 204, 404):
                 raise BadRequestError("Supabase 계정 삭제에 실패했습니다.")
