@@ -15,7 +15,7 @@ async def _get_jwks() -> dict:
     global _jwks_cache
     if _jwks_cache is not None:
         return _jwks_cache
-    url = f"{settings.SUPABASE_URL}/auth/v1/.well-known/jwks.json"
+    url = f"{settings.supabase_base_url}/auth/v1/.well-known/jwks.json"
     async with httpx.AsyncClient() as client:
         resp = await client.get(url)
         resp.raise_for_status()
