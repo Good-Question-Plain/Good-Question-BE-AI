@@ -2,7 +2,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, Query
 
-from app.core.dependencies import CurrentUser, DBSession, RedisDep
+from app.core.dependencies import CurrentUser, DBSession, RedisDep, S3ClientDep
 from app.domain.story.schema import (
     SceneItem,
     StoryDetail,
@@ -14,8 +14,8 @@ from app.domain.story.service import StoryService
 router = APIRouter(prefix="/stories", tags=["stories"])
 
 
-def _get_service(db: DBSession, redis: RedisDep) -> StoryService:
-    return StoryService(db, redis)
+def _get_service(db: DBSession, redis: RedisDep, s3: S3ClientDep) -> StoryService:
+    return StoryService(db, redis, s3)
 
 
 @router.get("", response_model=StoryListResponse)

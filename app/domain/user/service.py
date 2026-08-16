@@ -28,7 +28,7 @@ class UserService:
         return ChildResponse(
             id=child.id,
             name=child.name,
-            profile_image_url=resolve_image_url(child.profile_image_url),
+            profile_image_url=resolve_image_url(self.s3, child.profile_image_url),
             birth_year=child.birth_year,
         )
 
@@ -37,7 +37,7 @@ class UserService:
             id=parent.id,
             name=parent.name,
             email=email,
-            profile_image_url=resolve_image_url(parent.profile_image_url),
+            profile_image_url=resolve_image_url(self.s3, parent.profile_image_url),
         )
 
     def get_me(self, parent: Parent, email: str) -> ParentResponse:
